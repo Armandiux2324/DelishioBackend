@@ -25,7 +25,7 @@ class SendVerificationCode extends Mailable implements ShouldQueue
     public function content(): Content
     {
         return new Content(
-            view: 'emails.verification-code',
+            view: 'emails.verification_code',
             with: ['code' => $this->code],
         );
     }
