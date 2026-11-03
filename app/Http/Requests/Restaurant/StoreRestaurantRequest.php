@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests\SuperAdmin;
+namespace App\Http\Requests\Restaurant;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules;

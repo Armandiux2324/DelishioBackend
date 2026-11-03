@@ -7,30 +7,33 @@ use App\Http\Requests\Auth\ResetPasswordRequest;
 use App\Models\User;
 use App\Models\VerificationCode;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 
 class PasswordResetController extends Controller
 {
     public function store(ResetPasswordRequest $request): JsonResponse
     {
-        $user = User::where('email', $request->email)->first();
+        return DB::transaction(function () use ($request) {
+            $user = User::where('email', $request->email)->lockForUpdate()->first();
 
-        if (!$user) {
-            return response()->json(['message' => 'Código inválido'], 400);
-        }
+            if (! $user) {
+                return response()->json(['message' => 'Código inválido'], 400);
+            }
 
-        $verification = VerificationCode::check($user->id, 'password_reset', $request->code);
+            $verification = VerificationCode::consume($user->id, 'password_reset', $request->code);
 
-        if (is_string($verification)) {
-            return response()->json(['message' => $verification], 400);
-        }
+            if (is_string($verification)) {
+                return response()->json(['message' => $verification], 400);
+            }
 
-        $verification->update(['used' => true]);
-        $user->update(['password' => $request->password]);
+            $user->update(['password' => $request->password]);
+            $user->verificationCodes()->where('used', false)->update(['used' => true]);
 
-        // Invalida todas las sesiones existentes: si la contraseña se está
-        // reseteando, cualquier token emitido antes queda sin confianza.
-        $user->tokens()->delete();
+            // Invalida todas las sesiones existentes: si la contraseña se está
+            // reseteando, cualquier token emitido antes queda sin confianza.
+            $user->tokens()->delete();
 
-        return response()->json(['message' => 'Contraseña actualizada correctamente']);
+            return response()->json(['message' => 'Contraseña actualizada correctamente']);
+        });
     }
 }
