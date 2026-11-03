@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\TwoFactorController;
 use App\Http\Controllers\Auth\VerifyEmailController;
+use App\Http\Controllers\SuperAdmin\RestaurantController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -29,6 +30,13 @@ Route::prefix('v1')->group(function () {
         Route::middleware('auth:sanctum')->group(function () {
             Route::post('/2fa/enable', [TwoFactorController::class, 'enable']);
             Route::post('/2fa/disable', [TwoFactorController::class, 'disable']);
+        });
+
+        Route::middleware(['auth:sanctum', 'role:super_admin'])->prefix('super-admin')->group(function () {
+            Route::apiResource('restaurants', RestaurantController::class)->except(['destroy'])->middleware('throttle:30,1');
+            Route::delete('/restaurants/{restaurant}', [RestaurantController::class, 'destroy'])->middleware('throttle:10,1');
+            Route::post('/restaurants/{restaurant}/activate', [RestaurantController::class, 'activate']);
+            Route::post('/restaurants/{restaurant}/suspend', [RestaurantController::class, 'suspend']);
         });
     });
 });
