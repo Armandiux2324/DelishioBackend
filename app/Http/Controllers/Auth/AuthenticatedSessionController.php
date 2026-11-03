@@ -10,6 +10,7 @@ use App\Models\VerificationCode;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -24,15 +25,15 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request): JsonResponse
     {
-        $user = User::where('email', $request->email)->first();
+        $login = $request->input('login', $request->email);
+        $field = str_contains($login, '@') ? 'email' : 'username';
+        $user = User::where($field, $login)->first();
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        if (! $user || ! Hash::check($request->password, $user->password)) {
             return response()->json(['message' => 'Credenciales inválidas'], 401);
         }
 
-        if (!$user->active) {
-            return response()->json(['message' => 'Cuenta inactiva'], 403);
-        }
+        $user->ensureCanAccess();
 
         if ($user->user_type === 'super_admin' || $user->two_factor_enabled) {
             $verification = VerificationCode::generate($user->id, 'login_2fa');
@@ -42,7 +43,10 @@ class AuthenticatedSessionController extends Controller
             );
 
             $ticket = Str::random(40);
-            Cache::put("2fa-ticket:{$ticket}", $user->id, now()->addMinutes(10));
+            Cache::put("2fa-ticket:{$ticket}", [
+                'user_id' => $user->id,
+                'verification_id' => $verification->id,
+            ], now()->addMinutes(10));
 
             return response()->json([
                 'requires_2fa' => true,
@@ -63,22 +67,25 @@ class AuthenticatedSessionController extends Controller
             'code' => ['required', 'string', 'size:6'],
         ]);
 
-        $userId = Cache::get("2fa-ticket:{$request->ticket}");
+        $challenge = Cache::get("2fa-ticket:{$request->ticket}");
 
-        if (!$userId) {
+        if (! is_array($challenge)) {
             return response()->json(['message' => 'Ticket inválido o expirado'], 401);
         }
 
-        $verification = VerificationCode::check($userId, 'login_2fa', $request->code);
+        return DB::transaction(function () use ($request, $challenge) {
+            $user = User::whereKey($challenge['user_id'])->lockForUpdate()->firstOrFail();
+            $user->ensureCanAccess();
+            $verification = VerificationCode::consume($user->id, 'login_2fa', $request->code, $challenge['verification_id']);
 
-        if (is_string($verification)) {
-            return response()->json(['message' => $verification], 400);
-        }
+            if (is_string($verification)) {
+                return response()->json(['message' => $verification], 400);
+            }
 
-        $verification->update(['used' => true]);
-        Cache::forget("2fa-ticket:{$request->ticket}");
+            Cache::forget("2fa-ticket:{$request->ticket}");
 
-        return response()->json($this->tokenResponse(User::findOrFail($userId)));
+            return response()->json($this->tokenResponse($user));
+        });
     }
 
     /**

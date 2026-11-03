@@ -26,11 +26,11 @@ class TwoFactorController extends Controller
 
         $request->validate(['password' => ['required', 'string']]);
 
-        if (!Hash::check($request->password, $user->password)) {
+        if (! Hash::check($request->password, $user->password)) {
             return response()->json(['message' => 'Contraseña incorrecta'], 422);
         }
 
-        $user->update(['two_factor_enabled' => true]);
+        $user->forceFill(['two_factor_enabled' => true])->save();
 
         return response()->json(['message' => 'Autenticación de dos factores activada']);
     }
@@ -47,11 +47,11 @@ class TwoFactorController extends Controller
 
         $request->validate(['password' => ['required', 'string']]);
 
-        if (!Hash::check($request->password, $user->password)) {
+        if (! Hash::check($request->password, $user->password)) {
             return response()->json(['message' => 'Contraseña incorrecta'], 422);
         }
 
-        $user->update(['two_factor_enabled' => false]);
+        $user->forceFill(['two_factor_enabled' => false])->save();
 
         return response()->json(['message' => 'Autenticación de dos factores desactivada']);
     }

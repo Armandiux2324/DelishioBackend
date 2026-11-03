@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Http\Controllers\SuperAdmin;
+namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\SuperAdmin\StoreRestaurantRequest;
-use App\Http\Requests\SuperAdmin\UpdateRestaurantRequest;
+use App\Http\Requests\Restaurant\StoreRestaurantRequest;
+use App\Http\Requests\Restaurant\UpdateRestaurantRequest;
 use App\Http\Resources\RestaurantResource;
 use App\Models\Employee;
 use App\Models\Restaurant;
@@ -57,8 +57,9 @@ class RestaurantController extends Controller
                 'email' => $request->admin_email,
                 'password' => $request->admin_password,
                 'user_type' => 'employee',
-                'email_verified_at' => now(),
             ]);
+
+            $adminUser->forceFill(['email_verified_at' => now()])->save();
 
             Employee::create([
                 'user_id' => $adminUser->id,
