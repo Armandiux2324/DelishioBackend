@@ -26,6 +26,7 @@ class RegisteredUserController extends Controller
         $user = DB::transaction(function () use ($request) {
             $user = User::create([
                 'name' => $request->name,
+                'locale' => $request->input('locale', app()->getLocale()),
                 'username' => $request->username,
                 'email' => $request->email,
                 'password' => $request->password,
@@ -42,12 +43,12 @@ class RegisteredUserController extends Controller
 
         $verification = VerificationCode::generate($user->id, 'email_verification');
 
-        Mail::to($user->email)->send(
+        Mail::to($user)->send(
             new SendVerificationCode($verification->code, 'Verifica tu cuenta')
         );
 
         return response()->json([
-            'message' => 'Cuenta creada. Revisa tu correo para verificarla.',
+            'message' => __('Cuenta creada. Revisa tu correo para verificarla.'),
         ], 201);
     }
 }

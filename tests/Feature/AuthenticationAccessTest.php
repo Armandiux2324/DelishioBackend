@@ -4,6 +4,7 @@ use App\Models\Employee;
 use App\Models\Restaurant;
 use App\Models\User;
 use App\Models\VerificationCode;
+use App\Support\RestaurantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -27,13 +28,13 @@ function restaurantEmployee(string $role = 'admin'): User
         'created_by_user_id' => User::factory()->create(['user_type' => 'super_admin'])->id,
     ]);
     $user = User::factory()->create(['user_type' => 'employee']);
-    Employee::create([
+    app(RestaurantContext::class)->run($restaurant, fn () => Employee::create([
         'user_id' => $user->id,
         'restaurant_id' => $restaurant->id,
         'role' => $role,
         'hourly_rate' => 100,
         'pin' => '012345',
-    ]);
+    ]));
 
     return $user;
 }
@@ -90,7 +91,7 @@ test('inaccessible accounts cannot login or use an existing token', function (st
         'unverified' => $user->forceFill(['email_verified_at' => null])->save(),
         'suspended' => $user->employee->restaurant->update(['status' => 'suspended']),
         'deleted restaurant' => $user->employee->restaurant->delete(),
-        'missing employee' => $user->employee->delete(),
+        'missing employee' => app(RestaurantContext::class)->run($user->employee->restaurant, fn () => $user->employee->delete()),
     };
     $this->postJson('/api/v1/auth/login', ['email' => $user->email, 'password' => 'password'])->assertForbidden();
     $this->withToken($token)->getJson('/api/v1/user')->assertForbidden();
@@ -195,6 +196,7 @@ test('two factor failures persist and expire without issuing tokens', function (
 })->with(['expired', 'attempts exhausted']);
 
 test('verification codes expire and stop accepting attempts after five failures', function () {
+    app()->setLocale('es');
     $user = User::factory()->create();
     $verification = VerificationCode::generate($user->id, 'password_reset');
     $wrong = $verification->code === '000000' ? '111111' : '000000';

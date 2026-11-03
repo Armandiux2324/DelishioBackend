@@ -9,6 +9,7 @@ use App\Http\Resources\RestaurantResource;
 use App\Models\Employee;
 use App\Models\Restaurant;
 use App\Models\User;
+use App\Support\RestaurantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
@@ -61,13 +62,13 @@ class RestaurantController extends Controller
 
             $adminUser->forceFill(['email_verified_at' => now()])->save();
 
-            Employee::create([
+            app(RestaurantContext::class)->run($restaurant, fn () => Employee::create([
                 'user_id' => $adminUser->id,
                 'restaurant_id' => $restaurant->id,
                 'role' => 'admin',
                 'hourly_rate' => 0,
                 'pin' => str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT),
-            ]);
+            ]));
 
             return $restaurant;
         });
@@ -114,6 +115,6 @@ class RestaurantController extends Controller
     {
         $restaurant->delete();
 
-        return response()->json(['message' => 'Restaurante eliminado']);
+        return response()->json(['message' => __('Restaurante eliminado')]);
     }
 }

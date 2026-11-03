@@ -20,19 +20,19 @@ class TwoFactorController extends Controller
 
         if ($user->user_type === 'super_admin') {
             return response()->json([
-                'message' => 'La autenticación de dos factores ya está activa de forma permanente para Super Administrador',
+                'message' => __('La autenticación de dos factores ya está activa de forma permanente para Super Administrador'),
             ], 422);
         }
 
         $request->validate(['password' => ['required', 'string']]);
 
         if (! Hash::check($request->password, $user->password)) {
-            return response()->json(['message' => 'Contraseña incorrecta'], 422);
+            return response()->json(['message' => __('Contraseña incorrecta')], 422);
         }
 
         $user->forceFill(['two_factor_enabled' => true])->save();
 
-        return response()->json(['message' => 'Autenticación de dos factores activada']);
+        return response()->json(['message' => __('Autenticación de dos factores activada')]);
     }
 
     public function disable(Request $request): JsonResponse
@@ -41,18 +41,18 @@ class TwoFactorController extends Controller
 
         if ($user->user_type === 'super_admin') {
             return response()->json([
-                'message' => 'La autenticación de dos factores no se puede desactivar para Super Administrador',
+                'message' => __('La autenticación de dos factores no se puede desactivar para Super Administrador'),
             ], 422);
         }
 
         $request->validate(['password' => ['required', 'string']]);
 
         if (! Hash::check($request->password, $user->password)) {
-            return response()->json(['message' => 'Contraseña incorrecta'], 422);
+            return response()->json(['message' => __('Contraseña incorrecta')], 422);
         }
 
         $user->forceFill(['two_factor_enabled' => false])->save();
 
-        return response()->json(['message' => 'Autenticación de dos factores desactivada']);
+        return response()->json(['message' => __('Autenticación de dos factores desactivada')]);
     }
 }

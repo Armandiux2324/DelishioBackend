@@ -30,15 +30,16 @@ class AuthenticatedSessionController extends Controller
         $user = User::where($field, $login)->first();
 
         if (! $user || ! Hash::check($request->password, $user->password)) {
-            return response()->json(['message' => 'Credenciales inválidas'], 401);
+            return response()->json(['message' => __('Credenciales inválidas')], 401);
         }
 
+        app()->setLocale($user->preferredLocale());
         $user->ensureCanAccess();
 
         if ($user->user_type === 'super_admin' || $user->two_factor_enabled) {
             $verification = VerificationCode::generate($user->id, 'login_2fa');
 
-            Mail::to($user->email)->send(
+            Mail::to($user)->send(
                 new SendVerificationCode($verification->code, 'Código de inicio de sesión')
             );
 
@@ -70,11 +71,12 @@ class AuthenticatedSessionController extends Controller
         $challenge = Cache::get("2fa-ticket:{$request->ticket}");
 
         if (! is_array($challenge)) {
-            return response()->json(['message' => 'Ticket inválido o expirado'], 401);
+            return response()->json(['message' => __('Ticket inválido o expirado')], 401);
         }
 
         return DB::transaction(function () use ($request, $challenge) {
             $user = User::whereKey($challenge['user_id'])->lockForUpdate()->firstOrFail();
+            app()->setLocale($user->preferredLocale());
             $user->ensureCanAccess();
             $verification = VerificationCode::consume($user->id, 'login_2fa', $request->code, $challenge['verification_id']);
 
@@ -95,7 +97,7 @@ class AuthenticatedSessionController extends Controller
     {
         $request->user()->currentAccessToken()->delete();
 
-        return response()->json(['message' => 'Sesión cerrada']);
+        return response()->json(['message' => __('Sesión cerrada')]);
     }
 
     private function tokenResponse(User $user): array
