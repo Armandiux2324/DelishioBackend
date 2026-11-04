@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Restaurant\UpdateRestaurantConfigurationRequest;
 use App\Http\Resources\RestaurantConfigurationResource;
+use App\Models\CashRegister;
 use App\Models\Restaurant;
 use App\Support\RestaurantContext;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +24,7 @@ class RestaurantConfigurationController extends Controller
         return DB::transaction(function () use ($request, $context) {
             $restaurant = Restaurant::whereKey($context->id())->lockForUpdate()->firstOrFail();
             $restaurant->fill($request->validated());
+            abort_if($restaurant->isDirty('currency') && CashRegister::exists(), 409, __('La moneda no se puede cambiar después de abrir una caja.'));
 
             // Valida el estado final bajo bloqueo: los PATCH parciales pueden conservar valores guardados.
             $rules = [];

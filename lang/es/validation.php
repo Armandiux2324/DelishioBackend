@@ -51,6 +51,9 @@ return [
         'file' => 'El campo :attribute debe tener :size kilobytes.',
     ],
     'attributes' => [
+        'opening_amount' => 'monto inicial', 'counted_cash' => 'efectivo contado', 'amount' => 'monto',
+        'cash_register_id' => 'caja', 'type' => 'tipo', 'related_employee_id' => 'empleado',
+        'payroll_period_start' => 'inicio del periodo de nómina', 'payroll_period_end' => 'fin del periodo de nómina',
         'condition_type' => 'tipo de condición', 'condition_value' => 'valor de condición',
         'discount_type' => 'tipo de descuento', 'discount_value' => 'valor de descuento',
         'days_of_week' => 'días de aplicación', 'time_start' => 'hora inicial', 'time_end' => 'hora final',

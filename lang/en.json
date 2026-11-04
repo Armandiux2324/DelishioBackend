@@ -1,4 +1,13 @@
 {
+    "La moneda no se puede cambiar después de abrir una caja.": "The currency cannot be changed after opening a cash register.",
+    "Ya tienes un turno abierto.": "You already have an open shift.",
+    "El turno ya está cerrado.": "The shift is already closed.",
+    "El restaurante ya tiene una caja abierta.": "The restaurant already has an open cash register.",
+    "La caja ya está cerrada.": "The cash register is already closed.",
+    "El empleado seleccionado no está disponible.": "The selected employee is not available.",
+    "El monto supera el efectivo disponible en caja.": "The amount exceeds the cash available in the register.",
+    "El saldo de caja excede el límite permitido.": "The cash balance exceeds the allowed limit.",
+    "El saldo esperado de caja está fuera del rango permitido.": "The expected cash balance is outside the allowed range.",
     "La categoría forma parte de una promoción sin eliminar.": "The category belongs to a promotion that has not been deleted.",
     "El elemento de menú forma parte de una promoción sin eliminar.": "The menu item belongs to a promotion that has not been deleted.",
     "Los días de aplicación no deben repetirse.": "Application days must not be repeated.",
