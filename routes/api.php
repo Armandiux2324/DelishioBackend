@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\Admin\RestaurantConfigurationController;
 use App\Http\Controllers\Api\RestaurantController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\PasswordResetController;
@@ -11,6 +12,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
+    Route::middleware(['auth:sanctum', 'account.active', 'role:admin'])->prefix('admin')->group(function () {
+        Route::get('/restaurant/configuration', [RestaurantConfigurationController::class, 'show']);
+        Route::patch('/restaurant/configuration', [RestaurantConfigurationController::class, 'update']);
+    });
+
     Route::get('/user', function (Request $request) {
         return $request->user();
     })->middleware(['auth:sanctum', 'account.active']);

@@ -1,6 +1,12 @@
 <?php
 
 return [
+    'missing' => 'El campo :attribute no debe estar presente.',
+    'decimal' => 'El campo :attribute debe tener entre :min y :max decimales.',
+    'url' => 'El campo :attribute debe ser una URL válida.',
+    'gt' => [
+        'numeric' => 'El campo :attribute debe ser mayor que :value.',
+    ],
     'required' => 'El campo :attribute es obligatorio.',
     'required_without' => 'El campo :attribute es obligatorio cuando :values no está presente.',
     'string' => 'El campo :attribute debe ser una cadena de texto.',
@@ -39,5 +45,11 @@ return [
         'password' => 'contraseña', 'phone' => 'teléfono', 'code' => 'código', 'locale' => 'idioma',
         'admin_name' => 'nombre del administrador', 'admin_email' => 'correo del administrador',
         'admin_password' => 'contraseña del administrador', 'address' => 'dirección',
+        'description' => 'descripción', 'schedule' => 'horario', 'logo_url' => 'URL del logo',
+        'currency' => 'moneda', 'loyalty_enabled' => 'puntos de lealtad habilitados',
+        'loyalty_factor' => 'factor de puntos', 'loyalty_redeem_value' => 'valor de canje',
+        'discount_limit_per_shift' => 'límite de descuento por turno',
+        'courtesy_percentage' => 'porcentaje de cortesías', 'courtesy_daily_limit' => 'límite diario de cortesías',
+        'dual_pricing_enabled' => 'precios duales habilitados', 'dual_pricing_percentage' => 'porcentaje de ajuste por tarjeta',
     ],
 ];

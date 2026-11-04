@@ -10,22 +10,22 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable([
-    'name', 
-    'description', 
-    'address', 
-    'phone', 
-    'logo_url', 
-    'schedule', 
-    'currency', 
+    'name',
+    'description',
+    'address',
+    'phone',
+    'logo_url',
+    'schedule',
+    'currency',
     'status',
-    'loyalty_enabled', 
-    'loyalty_factor', 
+    'loyalty_enabled',
+    'loyalty_factor',
     'loyalty_redeem_value',
-    'discount_limit_per_shift', 
-    'courtesy_percentage', 
+    'discount_limit_per_shift',
+    'courtesy_percentage',
     'courtesy_daily_limit',
-    'dual_pricing_enabled', 
-    'dual_pricing_percentage', 
+    'dual_pricing_enabled',
+    'dual_pricing_percentage',
     'created_by_user_id',
 ])]
 
@@ -38,6 +38,12 @@ class Restaurant extends Model
         return [
             'loyalty_enabled' => 'boolean',
             'dual_pricing_enabled' => 'boolean',
+            'loyalty_factor' => 'decimal:4',
+            'loyalty_redeem_value' => 'decimal:4',
+            'discount_limit_per_shift' => 'decimal:2',
+            'courtesy_percentage' => 'decimal:2',
+            'courtesy_daily_limit' => 'integer',
+            'dual_pricing_percentage' => 'decimal:2',
         ];
     }
 
