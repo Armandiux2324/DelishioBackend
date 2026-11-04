@@ -1,4 +1,7 @@
 {
+    "El restaurante debe conservar al menos un administrador activo.": "The restaurant must keep at least one active administrator.",
+    "PIN de administrador inválido.": "Invalid administrator PIN.",
+    "Demasiados intentos de PIN. Intenta más tarde.": "Too many PIN attempts. Try again later.",
     "La categoría seleccionada no está disponible.": "The selected category is not available.",
     "La categoría tiene elementos de menú sin eliminar.": "The category has menu items that have not been deleted.",
     "La unidad no se puede cambiar si el ingrediente forma parte de una receta.": "The unit cannot be changed while the ingredient belongs to a recipe.",

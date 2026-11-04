@@ -19,6 +19,8 @@ return [
     'alpha_dash' => 'El campo :attribute solo puede contener letras, números, guiones y guiones bajos.',
     'in' => 'El valor seleccionado para :attribute no es válido.',
     'boolean' => 'El campo :attribute debe ser verdadero o falso.',
+    'regex' => 'El formato del campo :attribute no es válido.',
+    'prohibited' => 'El campo :attribute está prohibido.',
     'numeric' => 'El campo :attribute debe ser un número.',
     'integer' => 'El campo :attribute debe ser un número entero.',
     'array' => 'El campo :attribute debe ser un arreglo.',
@@ -44,6 +46,7 @@ return [
         'file' => 'El campo :attribute debe tener :size kilobytes.',
     ],
     'attributes' => [
+        'role' => 'rol', 'station' => 'estación', 'hourly_rate' => 'tarifa por hora', 'pin' => 'PIN',
         'category_id' => 'categoría', 'sale_price' => 'precio de venta', 'image_url' => 'URL de imagen',
         'legal_age_required' => 'edad legal requerida', 'preparation_station' => 'estación de preparación',
         'active' => 'activo', 'ingredients' => 'ingredientes',
