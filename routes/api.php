@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\Admin\CashMovementController;
 use App\Http\Controllers\Api\Admin\CategoryController;
 use App\Http\Controllers\Api\Admin\CustomerController;
 use App\Http\Controllers\Api\Admin\EmployeeController;
@@ -10,7 +11,9 @@ use App\Http\Controllers\Api\Admin\PromotionController;
 use App\Http\Controllers\Api\Admin\RestaurantConfigurationController;
 use App\Http\Controllers\Api\Admin\SuperCategoryController;
 use App\Http\Controllers\Api\Admin\TaxClassController;
+use App\Http\Controllers\Api\CashRegisterController;
 use App\Http\Controllers\Api\RestaurantController;
+use App\Http\Controllers\Api\WorkShiftController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
@@ -21,7 +24,19 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
+    Route::middleware(['auth:sanctum', 'account.active', 'role:admin,waiter,chef'])->group(function () {
+        Route::get('work-shifts', [WorkShiftController::class, 'index']);
+        Route::get('work-shifts/{work_shift}', [WorkShiftController::class, 'show']);
+        Route::post('work-shifts', [WorkShiftController::class, 'store']);
+        Route::post('work-shifts/{work_shift}/clock-out', [WorkShiftController::class, 'clockOut']);
+    });
+    Route::middleware(['auth:sanctum', 'account.active', 'role:admin,waiter'])->group(function () {
+        Route::apiResource('cash-registers', CashRegisterController::class)->only(['index', 'show', 'store']);
+    });
+    Route::post('cash-registers/{cash_register}/close', [CashRegisterController::class, 'close'])
+        ->middleware(['auth:sanctum', 'account.active', 'role:waiter']);
     Route::middleware(['auth:sanctum', 'account.active', 'role:admin'])->prefix('admin')->group(function () {
+        Route::apiResource('cash-movements', CashMovementController::class)->only(['index', 'show', 'store']);
         Route::get('customers', [CustomerController::class, 'index']);
         Route::get('customers/{customer}', [CustomerController::class, 'show'])->whereNumber('customer');
         Route::apiResource('promotions', PromotionController::class);

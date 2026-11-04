@@ -22,6 +22,12 @@ class Employee extends Model
 
     public $incrementing = false;
 
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->whereHas('user', fn ($user) => $user->where('user_type', 'employee')->where('active', true)->whereNotNull('email_verified_at'))
+            ->whereHas('restaurant', fn ($restaurant) => $restaurant->where('status', 'active'));
+    }
+
     protected static function booted(): void
     {
         static::saving(function (Employee $employee) {
