@@ -1,4 +1,7 @@
 {
+    "La pérdida supera la existencia disponible.": "The loss exceeds the available stock.",
+    "La unidad no se puede cambiar después de registrar pérdidas.": "The unit cannot be changed after recording losses.",
+    "El motivo no debe exceder 65535 bytes.": "The reason must not exceed 65535 bytes.",
     "La clase de impuesto tiene súper categorías activas.": "The tax class has active super categories.",
     "La súper categoría tiene categorías activas.": "The super category has active categories.",
     "La descripción no debe exceder 65535 bytes.": "The description must not exceed 65535 bytes.",

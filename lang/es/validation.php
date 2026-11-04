@@ -42,6 +42,8 @@ return [
         'file' => 'El campo :attribute debe tener :size kilobytes.',
     ],
     'attributes' => [
+        'unit' => 'unidad de medida', 'unit_cost' => 'costo unitario', 'current_stock' => 'existencia',
+        'inventory_item_id' => 'ingrediente', 'quantity' => 'cantidad', 'reason' => 'motivo',
         'percentage' => 'porcentaje', 'tax_class_id' => 'clase de impuesto', 'super_category_id' => 'súper categoría',
         'name' => 'nombre', 'username' => 'usuario', 'email' => 'correo electrónico',
         'password' => 'contraseña', 'phone' => 'teléfono', 'code' => 'código', 'locale' => 'idioma',
