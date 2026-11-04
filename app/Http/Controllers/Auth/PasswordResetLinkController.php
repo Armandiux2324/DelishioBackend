@@ -26,13 +26,13 @@ class PasswordResetLinkController extends Controller
         if ($user) {
             $verification = VerificationCode::generate($user->id, 'password_reset');
 
-            Mail::to($user->email)->send(
+            Mail::to($user)->send(
                 new SendVerificationCode($verification->code, 'Restablece tu contraseña')
             );
         }
 
         return response()->json([
-            'message' => 'Si la cuenta existe, se envió un código para restablecer la contraseña.',
+            'message' => __('Si la cuenta existe, se envió un código para restablecer la contraseña.'),
         ]);
     }
 }

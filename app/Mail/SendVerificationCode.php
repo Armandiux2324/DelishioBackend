@@ -13,13 +13,11 @@ class SendVerificationCode extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
-    public function __construct(public string $code, public string $subjectLine)
-    {
-    }
+    public function __construct(public string $code, public string $subjectLine) {}
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: $this->subjectLine);
+        return new Envelope(subject: __($this->subjectLine));
     }
 
     public function content(): Content

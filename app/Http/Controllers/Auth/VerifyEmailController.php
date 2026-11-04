@@ -24,7 +24,7 @@ class VerifyEmailController extends Controller
             $user = User::where('email', $request->email)->lockForUpdate()->first();
 
             if (! $user) {
-                return response()->json(['message' => 'Usuario no encontrado'], 404);
+                return response()->json(['message' => __('Usuario no encontrado')], 404);
             }
 
             $verification = VerificationCode::consume($user->id, 'email_verification', $request->code);
@@ -35,7 +35,7 @@ class VerifyEmailController extends Controller
 
             $user->forceFill(['email_verified_at' => now()])->save();
 
-            return response()->json(['message' => 'Correo verificado correctamente']);
+            return response()->json(['message' => __('Correo verificado correctamente')]);
         });
     }
 
@@ -50,15 +50,15 @@ class VerifyEmailController extends Controller
 
         if (! $user || $user->email_verified_at) {
             // misma respuesta exista o no el usuario / ya esté verificado, para no filtrar qué correos están registrados
-            return response()->json(['message' => 'Si la cuenta existe, se envió un nuevo código.']);
+            return response()->json(['message' => __('Si la cuenta existe, se envió un nuevo código.')]);
         }
 
         $verification = VerificationCode::generate($user->id, 'email_verification');
 
-        Mail::to($user->email)->send(
+        Mail::to($user)->send(
             new SendVerificationCode($verification->code, 'Verifica tu cuenta')
         );
 
-        return response()->json(['message' => 'Si la cuenta existe, se envió un nuevo código.']);
+        return response()->json(['message' => __('Si la cuenta existe, se envió un nuevo código.')]);
     }
 }

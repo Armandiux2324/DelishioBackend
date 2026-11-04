@@ -17,7 +17,7 @@ class PasswordResetController extends Controller
             $user = User::where('email', $request->email)->lockForUpdate()->first();
 
             if (! $user) {
-                return response()->json(['message' => 'Código inválido'], 400);
+                return response()->json(['message' => __('Código inválido')], 400);
             }
 
             $verification = VerificationCode::consume($user->id, 'password_reset', $request->code);
@@ -33,7 +33,7 @@ class PasswordResetController extends Controller
             // reseteando, cualquier token emitido antes queda sin confianza.
             $user->tokens()->delete();
 
-            return response()->json(['message' => 'Contraseña actualizada correctamente']);
+            return response()->json(['message' => __('Contraseña actualizada correctamente')]);
         });
     }
 }

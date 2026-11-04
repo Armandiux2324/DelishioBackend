@@ -52,11 +52,11 @@ class VerificationCode extends Model
                 ->latest('id')->lockForUpdate()->first();
 
             if (! $verification || $verification->attempts >= self::MAX_ATTEMPTS) {
-                return 'Código inválido';
+                return __('Código inválido');
             }
 
             if ($verification->expires_at->isPast()) {
-                return 'Código expirado';
+                return __('Código expirado');
             }
 
             if (! hash_equals((string) $verification->code, $code)) {
@@ -66,7 +66,7 @@ class VerificationCode extends Model
                     $verification->update(['used' => true]);
                 }
 
-                return 'Código inválido';
+                return __('Código inválido');
             }
 
             $verification->update(['used' => true]);

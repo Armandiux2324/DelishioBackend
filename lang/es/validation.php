@@ -1,0 +1,43 @@
+<?php
+
+return [
+    'required' => 'El campo :attribute es obligatorio.',
+    'required_without' => 'El campo :attribute es obligatorio cuando :values no está presente.',
+    'string' => 'El campo :attribute debe ser una cadena de texto.',
+    'email' => 'El campo :attribute debe ser un correo electrónico válido.',
+    'unique' => 'El valor del campo :attribute ya está registrado.',
+    'exists' => 'El valor seleccionado para :attribute no es válido.',
+    'confirmed' => 'La confirmación del campo :attribute no coincide.',
+    'lowercase' => 'El campo :attribute debe estar en minúsculas.',
+    'alpha_dash' => 'El campo :attribute solo puede contener letras, números, guiones y guiones bajos.',
+    'in' => 'El valor seleccionado para :attribute no es válido.',
+    'boolean' => 'El campo :attribute debe ser verdadero o falso.',
+    'numeric' => 'El campo :attribute debe ser un número.',
+    'integer' => 'El campo :attribute debe ser un número entero.',
+    'array' => 'El campo :attribute debe ser un arreglo.',
+    'date' => 'El campo :attribute debe ser una fecha válida.',
+    'max' => [
+        'string' => 'El campo :attribute no debe exceder :max caracteres.',
+        'numeric' => 'El campo :attribute no debe ser mayor que :max.',
+        'array' => 'El campo :attribute no debe tener más de :max elementos.',
+        'file' => 'El campo :attribute no debe exceder :max kilobytes.',
+    ],
+    'min' => [
+        'string' => 'El campo :attribute debe tener al menos :min caracteres.',
+        'numeric' => 'El campo :attribute debe ser al menos :min.',
+        'array' => 'El campo :attribute debe tener al menos :min elementos.',
+        'file' => 'El campo :attribute debe tener al menos :min kilobytes.',
+    ],
+    'size' => [
+        'string' => 'El campo :attribute debe tener :size caracteres.',
+        'numeric' => 'El campo :attribute debe ser :size.',
+        'array' => 'El campo :attribute debe contener :size elementos.',
+        'file' => 'El campo :attribute debe tener :size kilobytes.',
+    ],
+    'attributes' => [
+        'name' => 'nombre', 'username' => 'usuario', 'email' => 'correo electrónico',
+        'password' => 'contraseña', 'phone' => 'teléfono', 'code' => 'código', 'locale' => 'idioma',
+        'admin_name' => 'nombre del administrador', 'admin_email' => 'correo del administrador',
+        'admin_password' => 'contraseña del administrador', 'address' => 'dirección',
+    ],
+];

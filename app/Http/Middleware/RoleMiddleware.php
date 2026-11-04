@@ -25,7 +25,7 @@ class RoleMiddleware
         $user = $request->user();
 
         if (! $user) {
-            abort(401, 'No autenticado');
+            abort(401, __('No autenticado'));
         }
 
         $user->ensureCanAccess();
@@ -37,7 +37,7 @@ class RoleMiddleware
         };
 
         if (! $userRole || ! in_array($userRole, $roles, true)) {
-            abort(403, 'No tienes permiso para esta acción');
+            abort(403, __('No tienes permiso para esta acción'));
         }
 
         if ($user->user_type === 'employee' && $request->route('restaurant')) {
@@ -45,7 +45,7 @@ class RoleMiddleware
             $routeRestaurantId = is_object($routeRestaurant) ? $routeRestaurant->id : (int) $routeRestaurant;
 
             if ((string) $routeRestaurantId !== (string) $user->employee->restaurant_id) {
-                abort(403, 'No tienes acceso a este restaurante');
+                abort(403, __('No tienes acceso a este restaurante'));
             }
         }
 
