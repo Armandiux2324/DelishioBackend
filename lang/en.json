@@ -1,4 +1,6 @@
 {
+    "La clase de impuesto tiene súper categorías activas.": "The tax class has active super categories.",
+    "La súper categoría tiene categorías activas.": "The super category has active categories.",
     "La descripción no debe exceder 65535 bytes.": "The description must not exceed 65535 bytes.",
     "Cuenta inactiva": "Account inactive",
     "Verifica tu correo electrónico": "Verify your email address",

@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'filled' => 'El campo :attribute no debe estar vacío.',
     'missing' => 'El campo :attribute no debe estar presente.',
     'decimal' => 'El campo :attribute debe tener entre :min y :max decimales.',
     'url' => 'El campo :attribute debe ser una URL válida.',
@@ -41,6 +42,7 @@ return [
         'file' => 'El campo :attribute debe tener :size kilobytes.',
     ],
     'attributes' => [
+        'percentage' => 'porcentaje', 'tax_class_id' => 'clase de impuesto', 'super_category_id' => 'súper categoría',
         'name' => 'nombre', 'username' => 'usuario', 'email' => 'correo electrónico',
         'password' => 'contraseña', 'phone' => 'teléfono', 'code' => 'código', 'locale' => 'idioma',
         'admin_name' => 'nombre del administrador', 'admin_email' => 'correo del administrador',
