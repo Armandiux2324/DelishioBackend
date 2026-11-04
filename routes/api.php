@@ -1,6 +1,9 @@
 <?php
 
+use App\Http\Controllers\Api\Admin\CategoryController;
 use App\Http\Controllers\Api\Admin\RestaurantConfigurationController;
+use App\Http\Controllers\Api\Admin\SuperCategoryController;
+use App\Http\Controllers\Api\Admin\TaxClassController;
 use App\Http\Controllers\Api\RestaurantController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\PasswordResetController;
@@ -13,6 +16,9 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
     Route::middleware(['auth:sanctum', 'account.active', 'role:admin'])->prefix('admin')->group(function () {
+        Route::apiResource('tax-classes', TaxClassController::class);
+        Route::apiResource('super-categories', SuperCategoryController::class);
+        Route::apiResource('categories', CategoryController::class);
         Route::get('/restaurant/configuration', [RestaurantConfigurationController::class, 'show']);
         Route::patch('/restaurant/configuration', [RestaurantConfigurationController::class, 'update']);
     });
