@@ -46,6 +46,10 @@ class MenuItem extends Model
             abort_unless(Category::whereKey($item->category_id)->lockForUpdate()->first(), 403);
         });
         static::deleting(fn (MenuItem $item) => abort_unless(static::withTrashed()->whereKey($item->getKey())->exists(), 403));
+        static::deleting(function (MenuItem $item) {
+            abort_if(PromotionMenuItem::where('menu_item_id', $item->id)->whereHas('promotion', fn ($query) => $query->withoutTrashed())->exists(),
+                409, __('El elemento de menú forma parte de una promoción sin eliminar.'));
+        });
     }
 
     public function newEloquentBuilder($query): RestaurantBuilder
