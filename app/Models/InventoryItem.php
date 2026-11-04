@@ -28,6 +28,7 @@ class InventoryItem extends Model
         static::saving(function (InventoryItem $item) {
             if ($item->exists && $item->isDirty('unit')) {
                 abort_if($item->losses()->exists(), 409, __('La unidad no se puede cambiar después de registrar pérdidas.'));
+                abort_if(InventoryMovement::where('inventory_item_id', $item->id)->exists(), 409, __('La unidad no se puede cambiar después de registrar consumos.'));
                 abort_if(MenuItemIngredient::where('inventory_item_id', $item->id)->exists(), 409, __('La unidad no se puede cambiar si el ingrediente forma parte de una receta.'));
             }
         });

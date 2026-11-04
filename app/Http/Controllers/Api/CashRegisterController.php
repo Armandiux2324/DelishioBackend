@@ -7,6 +7,7 @@ use App\Http\Requests\Cash\CloseCashRegisterRequest;
 use App\Http\Requests\Cash\OpenCashRegisterRequest;
 use App\Http\Resources\CashRegisterResource;
 use App\Models\CashRegister;
+use App\Models\Order;
 use App\Models\Restaurant;
 use App\Support\RestaurantContext;
 use Brick\Math\BigDecimal;
@@ -43,6 +44,8 @@ class CashRegisterController extends Controller
         return DB::transaction(function () use ($request, $cashRegister) {
             $register = CashRegister::whereKey($cashRegister->id)->lockForUpdate()->firstOrFail();
             abort_if($register->closed_at !== null, 409, __('La caja ya está cerrada.'));
+            abort_if(Order::where('cash_register_id', $register->id)->whereIn('status', ['open', 'sent'])->exists(),
+                409, __('La caja tiene órdenes pendientes de cerrar o cancelar.'));
             $expected = $register->expectedCash();
             if ($expected->isNegative() || $expected->isGreaterThan('99999999.99')) {
                 throw ValidationException::withMessages(['counted_cash' => __('El saldo esperado de caja está fuera del rango permitido.')]);
