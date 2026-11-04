@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\Admin\CategoryController;
+use App\Http\Controllers\Api\Admin\EmployeeController;
 use App\Http\Controllers\Api\Admin\InventoryItemController;
 use App\Http\Controllers\Api\Admin\InventoryLossController;
 use App\Http\Controllers\Api\Admin\MenuItemController;
@@ -19,6 +20,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
     Route::middleware(['auth:sanctum', 'account.active', 'role:admin'])->prefix('admin')->group(function () {
+        Route::apiResource('employees', EmployeeController::class);
         Route::apiResource('menu-items', MenuItemController::class);
         Route::apiResource('inventory-items', InventoryItemController::class);
         Route::apiResource('inventory-losses', InventoryLossController::class)->only(['index', 'show', 'store']);
