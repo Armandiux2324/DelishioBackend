@@ -1,4 +1,8 @@
 {
+    "La categoría forma parte de una promoción sin eliminar.": "The category belongs to a promotion that has not been deleted.",
+    "El elemento de menú forma parte de una promoción sin eliminar.": "The menu item belongs to a promotion that has not been deleted.",
+    "Los días de aplicación no deben repetirse.": "Application days must not be repeated.",
+    "El elemento de menú seleccionado no está disponible.": "The selected menu item is not available.",
     "El restaurante debe conservar al menos un administrador activo.": "The restaurant must keep at least one active administrator.",
     "PIN de administrador inválido.": "Invalid administrator PIN.",
     "Demasiados intentos de PIN. Intenta más tarde.": "Too many PIN attempts. Try again later.",
