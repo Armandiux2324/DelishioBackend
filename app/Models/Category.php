@@ -32,6 +32,7 @@ class Category extends Model
 
         static::deleting(function (Category $category) {
             abort_unless(SuperCategory::whereKey($category->getRawOriginal('super_category_id'))->exists(), 403);
+            abort_if(MenuItem::where('category_id', $category->id)->exists(), 409, __('La categoría tiene elementos de menú sin eliminar.'));
         });
     }
 

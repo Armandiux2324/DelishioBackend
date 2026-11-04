@@ -1,4 +1,9 @@
 {
+    "La categoría seleccionada no está disponible.": "The selected category is not available.",
+    "La categoría tiene elementos de menú sin eliminar.": "The category has menu items that have not been deleted.",
+    "La unidad no se puede cambiar si el ingrediente forma parte de una receta.": "The unit cannot be changed while the ingredient belongs to a recipe.",
+    "El ingrediente forma parte de una receta.": "The ingredient belongs to a recipe.",
+    "Los valores de auditoría no deben exceder 65535 bytes.": "Audit values must not exceed 65535 bytes.",
     "La pérdida supera la existencia disponible.": "The loss exceeds the available stock.",
     "La unidad no se puede cambiar después de registrar pérdidas.": "The unit cannot be changed after recording losses.",
     "El motivo no debe exceder 65535 bytes.": "The reason must not exceed 65535 bytes.",

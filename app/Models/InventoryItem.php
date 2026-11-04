@@ -28,7 +28,12 @@ class InventoryItem extends Model
         static::saving(function (InventoryItem $item) {
             if ($item->exists && $item->isDirty('unit')) {
                 abort_if($item->losses()->exists(), 409, __('La unidad no se puede cambiar después de registrar pérdidas.'));
+                abort_if(MenuItemIngredient::where('inventory_item_id', $item->id)->exists(), 409, __('La unidad no se puede cambiar si el ingrediente forma parte de una receta.'));
             }
+        });
+        static::deleting(function (InventoryItem $item) {
+            abort_if(MenuItemIngredient::where('inventory_item_id', $item->id)->whereHas('menuItem', fn ($query) => $query->withoutTrashed())->exists(),
+                409, __('El ingrediente forma parte de una receta.'));
         });
     }
 

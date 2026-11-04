@@ -22,6 +22,8 @@ return [
     'numeric' => 'El campo :attribute debe ser un número.',
     'integer' => 'El campo :attribute debe ser un número entero.',
     'array' => 'El campo :attribute debe ser un arreglo.',
+    'list' => 'El campo :attribute debe ser una lista.',
+    'distinct' => 'El campo :attribute contiene un valor duplicado.',
     'date' => 'El campo :attribute debe ser una fecha válida.',
     'max' => [
         'string' => 'El campo :attribute no debe exceder :max caracteres.',
@@ -42,6 +44,9 @@ return [
         'file' => 'El campo :attribute debe tener :size kilobytes.',
     ],
     'attributes' => [
+        'category_id' => 'categoría', 'sale_price' => 'precio de venta', 'image_url' => 'URL de imagen',
+        'legal_age_required' => 'edad legal requerida', 'preparation_station' => 'estación de preparación',
+        'active' => 'activo', 'ingredients' => 'ingredientes',
         'unit' => 'unidad de medida', 'unit_cost' => 'costo unitario', 'current_stock' => 'existencia',
         'inventory_item_id' => 'ingrediente', 'quantity' => 'cantidad', 'reason' => 'motivo',
         'percentage' => 'porcentaje', 'tax_class_id' => 'clase de impuesto', 'super_category_id' => 'súper categoría',
