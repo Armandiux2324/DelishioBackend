@@ -51,6 +51,9 @@ return [
         'file' => 'El campo :attribute debe tener :size kilobytes.',
     ],
     'attributes' => [
+        'service_type' => 'tipo de servicio', 'table_number' => 'número de mesa',
+        'delivery_address' => 'dirección de entrega', 'delivery_fee' => 'tarifa de envío',
+        'menu_item_id' => 'elemento de menú', 'modifiers' => 'modificadores', 'kitchen_notes' => 'notas para cocina',
         'opening_amount' => 'monto inicial', 'counted_cash' => 'efectivo contado', 'amount' => 'monto',
         'cash_register_id' => 'caja', 'type' => 'tipo', 'related_employee_id' => 'empleado',
         'payroll_period_start' => 'inicio del periodo de nómina', 'payroll_period_end' => 'fin del periodo de nómina',
