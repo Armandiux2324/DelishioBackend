@@ -33,6 +33,8 @@ class OrderResource extends JsonResource
             'items' => OrderItemResource::collection($this->whenLoaded('items')),
             'discounts' => OrderDiscountResource::collection($this->whenLoaded('discounts')),
             'tax_exemptions' => TaxExemptionResource::collection($this->whenLoaded('taxExemptions')),
+            'payments' => PaymentResource::collection($this->whenLoaded('payments')),
+            'loyalty_transactions' => LoyaltyTransactionResource::collection($this->whenLoaded('loyaltyTransactions')),
         ];
     }
 }
