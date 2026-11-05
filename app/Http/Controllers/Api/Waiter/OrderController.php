@@ -16,14 +16,14 @@ class OrderController extends Controller
 {
     public function index(Request $request): AnonymousResourceCollection
     {
-        return OrderResource::collection(Order::with(['items.menuItem', 'discounts', 'taxExemptions'])->where('waiter_employee_id', $request->user()->id)->orderByDesc('id')->paginate(20));
+        return OrderResource::collection(Order::with(['items.menuItem', 'discounts', 'taxExemptions', 'payments', 'loyaltyTransactions'])->where('waiter_employee_id', $request->user()->id)->orderByDesc('id')->paginate(20));
     }
 
     public function show(Request $request, Order $order): OrderResource
     {
         abort_unless($order->waiter_employee_id === $request->user()->id, 404);
 
-        return new OrderResource($order->load(['items.menuItem', 'discounts', 'taxExemptions']));
+        return new OrderResource($order->load(['items.menuItem', 'discounts', 'taxExemptions', 'payments', 'loyaltyTransactions']));
     }
 
     public function store(StoreOrderRequest $request, WaiterOrderService $service): JsonResponse

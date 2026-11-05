@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\CashRegisterController;
 use App\Http\Controllers\Api\RestaurantController;
 use App\Http\Controllers\Api\Waiter\MenuItemController as WaiterMenuItemController;
 use App\Http\Controllers\Api\Waiter\OrderAdjustmentController;
+use App\Http\Controllers\Api\Waiter\OrderCheckoutController;
 use App\Http\Controllers\Api\Waiter\OrderController;
 use App\Http\Controllers\Api\Waiter\OrderItemController;
 use App\Http\Controllers\Api\WorkShiftController;
@@ -33,6 +34,9 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('menu-items', WaiterMenuItemController::class)->only(['index', 'show']);
         Route::apiResource('orders', OrderController::class)->only(['index', 'show', 'store']);
         Route::post('orders/{order}/confirm', [OrderController::class, 'confirm']);
+        Route::post('orders/{order}/customer', [OrderCheckoutController::class, 'linkCustomer']);
+        Route::post('orders/{order}/checkout-preview', [OrderCheckoutController::class, 'preview']);
+        Route::post('orders/{order}/close', [OrderCheckoutController::class, 'close']);
         Route::post('orders/{order}/discounts', [OrderAdjustmentController::class, 'discount']);
         Route::post('orders/{order}/courtesies', [OrderAdjustmentController::class, 'courtesy']);
         Route::post('orders/{order}/tax-exemptions', [OrderAdjustmentController::class, 'exempt']);

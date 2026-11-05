@@ -37,10 +37,11 @@ class OrderTotals
         return ['subtotal' => $subtotal, 'lines' => $lines];
     }
 
-    public function calculate(Order $order, ?Collection $items = null, ?array $rates = null): array
+    public function calculate(Order $order, ?Collection $items = null, ?array $rates = null, string $redemptionAmount = '0.00'): array
     {
         $items ??= $order->items()->where('cancelled', false)->orderBy('id')->get();
         $basis = $this->basis($order, $items);
+        $this->allocate($basis['lines'], BigDecimal::of($redemptionAmount));
         $rates ??= $order->status === 'sent' || $order->sent_at !== null ? $this->taxRates($items) : [];
         $exemptions = $order->taxExemptions()->get();
         $wholeExempt = $exemptions->contains(fn ($exemption) => $exemption->order_item_id === null);

@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'present' => 'El campo :attribute debe estar presente.',
+    'uuid' => 'El campo :attribute debe ser un UUID válido.',
     'filled' => 'El campo :attribute no debe estar vacío.',
     'missing' => 'El campo :attribute no debe estar presente.',
     'decimal' => 'El campo :attribute debe tener entre :min y :max decimales.',
@@ -52,6 +54,8 @@ return [
         'file' => 'El campo :attribute debe tener :size kilobytes.',
     ],
     'attributes' => [
+        'payments' => 'pagos', 'payments.*.method' => 'método de pago', 'payments.*.amount' => 'importe del pago',
+        'tip_amount' => 'propina', 'redeem_points' => 'puntos a canjear', 'qr_code' => 'código QR del cliente',
         'admin_user_id' => 'administrador autorizante', 'order_item_id' => 'elemento de orden',
         'work_shift_id' => 'turno', 'kind' => 'tipo de ajuste',
         'service_type' => 'tipo de servicio', 'table_number' => 'número de mesa',

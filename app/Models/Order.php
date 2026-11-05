@@ -29,7 +29,11 @@ class Order extends Model
     protected static function booted(): void
     {
         static::saving(function (Order $order) {
+            abort_if($order->exists && $order->getRawOriginal('closed_at') !== null && $order->isDirty(), 409, __('La orden ya no permite ajustes.'));
             abort_if($order->exists && $order->isDirty(['waiter_employee_id', 'source', 'cash_register_id']), 403);
+            if ($order->customer_id !== null) {
+                abort_unless(Customer::whereKey($order->customer_id)->whereHas('user', fn ($query) => $query->where('user_type', 'customer'))->exists(), 403);
+            }
             if ($order->waiter_employee_id !== null) {
                 abort_unless(Employee::whereKey($order->waiter_employee_id)->exists(), 403);
             }
@@ -43,6 +47,16 @@ class Order extends Model
     public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    public function loyaltyTransactions(): HasMany
+    {
+        return $this->hasMany(LoyaltyTransaction::class)->orderBy('id');
     }
 
     public function discounts(): HasMany

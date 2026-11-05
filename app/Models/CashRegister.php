@@ -59,8 +59,10 @@ class CashRegister extends Model
 
     public function expectedCash(): BigDecimal
     {
-        // shortcut: Include cash payments when the order payment module is introduced.
         $expected = BigDecimal::of($this->opening_amount);
+        foreach (Payment::where('method', 'cash')->whereHas('order', fn ($query) => $query->where('cash_register_id', $this->id)->where('status', 'closed'))->orderBy('id')->cursor() as $payment) {
+            $expected = $expected->plus($payment->amount);
+        }
         foreach ($this->movements()->orderBy('id')->cursor() as $movement) {
             $expected = $movement->type === 'cash_in' ? $expected->plus($movement->amount) : $expected->minus($movement->amount);
         }
