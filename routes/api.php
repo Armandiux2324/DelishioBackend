@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\Admin\TaxClassController;
 use App\Http\Controllers\Api\CashRegisterController;
 use App\Http\Controllers\Api\RestaurantController;
 use App\Http\Controllers\Api\Waiter\MenuItemController as WaiterMenuItemController;
+use App\Http\Controllers\Api\Waiter\OrderAdjustmentController;
 use App\Http\Controllers\Api\Waiter\OrderController;
 use App\Http\Controllers\Api\Waiter\OrderItemController;
 use App\Http\Controllers\Api\WorkShiftController;
@@ -28,9 +29,15 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
     Route::middleware(['auth:sanctum', 'account.active', 'role:waiter'])->prefix('waiter')->name('waiter.')->scopeBindings()->group(function () {
+        Route::get('admin-authorizers', [OrderAdjustmentController::class, 'authorizers']);
         Route::apiResource('menu-items', WaiterMenuItemController::class)->only(['index', 'show']);
         Route::apiResource('orders', OrderController::class)->only(['index', 'show', 'store']);
         Route::post('orders/{order}/confirm', [OrderController::class, 'confirm']);
+        Route::post('orders/{order}/discounts', [OrderAdjustmentController::class, 'discount']);
+        Route::post('orders/{order}/courtesies', [OrderAdjustmentController::class, 'courtesy']);
+        Route::post('orders/{order}/tax-exemptions', [OrderAdjustmentController::class, 'exempt']);
+        Route::post('orders/{order}/cancel', [OrderAdjustmentController::class, 'cancel']);
+        Route::post('orders/{order}/items/{item}/cancel', [OrderAdjustmentController::class, 'cancelItem']);
         Route::post('orders/{order}/items', [OrderItemController::class, 'store']);
         Route::patch('orders/{order}/items/{item}', [OrderItemController::class, 'update']);
         Route::delete('orders/{order}/items/{item}', [OrderItemController::class, 'destroy']);

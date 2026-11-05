@@ -31,6 +31,8 @@ class OrderResource extends JsonResource
             'sent_at' => $this->sent_at,
             'closed_at' => $this->closed_at,
             'items' => OrderItemResource::collection($this->whenLoaded('items')),
+            'discounts' => OrderDiscountResource::collection($this->whenLoaded('discounts')),
+            'tax_exemptions' => TaxExemptionResource::collection($this->whenLoaded('taxExemptions')),
         ];
     }
 }

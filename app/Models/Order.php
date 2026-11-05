@@ -45,6 +45,16 @@ class Order extends Model
         return $this->hasMany(OrderItem::class);
     }
 
+    public function discounts(): HasMany
+    {
+        return $this->hasMany(OrderDiscount::class);
+    }
+
+    public function taxExemptions(): HasMany
+    {
+        return $this->hasMany(TaxExemption::class);
+    }
+
     public function cashRegister(): BelongsTo
     {
         return $this->belongsTo(CashRegister::class);
