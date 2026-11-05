@@ -14,10 +14,10 @@ use App\Models\OrderItem;
 use App\Models\SuperCategory;
 use App\Models\TaxClass;
 use Brick\Math\BigDecimal;
-use Brick\Math\RoundingMode;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 
 class WaiterOrderService
@@ -31,7 +31,7 @@ class WaiterOrderService
             $order = Order::create([...$data, 'waiter_employee_id' => $waiter->user_id, 'source' => 'pos', 'cash_register_id' => $cash->id]);
             $this->draftTotals($order);
 
-            return $order->load('items.menuItem');
+            return $order->load(['items.menuItem', 'discounts', 'taxExemptions']);
         });
     }
 
@@ -46,7 +46,7 @@ class WaiterOrderService
             $order->items()->create([...$data, 'unit_price' => $menu->sale_price, 'station' => $menu->preparation_station]);
             $this->draftTotals($order);
 
-            return $order->load('items.menuItem');
+            return $order->load(['items.menuItem', 'discounts', 'taxExemptions']);
         });
     }
 
@@ -59,7 +59,7 @@ class WaiterOrderService
             $item->update($data);
             $this->draftTotals($order);
 
-            return $order->load('items.menuItem');
+            return $order->load(['items.menuItem', 'discounts', 'taxExemptions']);
         });
     }
 
@@ -67,7 +67,17 @@ class WaiterOrderService
     {
         DB::transaction(function () use ($order, $item) {
             $order = $this->lockDraft($order);
-            $order->items()->whereKey($item->id)->lockForUpdate()->firstOrFail()->delete();
+            $item = $order->items()->whereKey($item->id)->lockForUpdate()->firstOrFail();
+            if ($item->discounts()->exists() || $item->taxExemptions()->exists()) {
+                abort_if($item->cancelled, 409, __('El elemento ya está cancelado.'));
+                $reason = __('Elemento eliminado antes de confirmar.');
+                $item->update(['cancelled' => true, 'cancel_reason' => $reason, 'cancelled_by_employee_id' => $order->waiter_employee_id]);
+                $event = ['order_id' => $order->id, 'order_item_id' => $item->id, 'reason' => $reason,
+                    'requested_by_employee_id' => $order->waiter_employee_id, 'authorized_by_employee_id' => null, 'cancelled_at' => now()->toIso8601String()];
+                DB::afterCommit(fn () => Log::info('order_cancelled', $event));
+            } else {
+                $item->delete();
+            }
             $this->draftTotals($order);
         });
     }
@@ -113,13 +123,7 @@ class WaiterOrderService
             if ($errors !== []) {
                 throw ValidationException::withMessages(['inventory' => $errors]);
             }
-            $subtotal = $tax = BigDecimal::of('0.00');
-            foreach ($items as $item) {
-                $line = BigDecimal::of($item->unit_price)->multipliedBy($item->quantity);
-                $subtotal = $subtotal->plus($line);
-                $tax = $tax->plus($line->multipliedBy($taxes[$item->menu_item_id])->dividedBy(100, 2, RoundingMode::HalfUp));
-            }
-            $totals = $this->totals($order, $subtotal, $tax);
+            $totals = app(OrderTotals::class)->calculate($order, $items, $taxes);
             foreach ($stock as $id => $ingredient) {
                 $ingredient->update(['current_stock' => (string) BigDecimal::of($ingredient->current_stock)->minus($needed[$id])]);
             }
@@ -128,7 +132,7 @@ class WaiterOrderService
             }
             $order->update($totals + ['status' => 'sent', 'sent_at' => now()]);
 
-            return $order->load('items.menuItem');
+            return $order->load(['items.menuItem', 'discounts', 'taxExemptions']);
         });
     }
 
@@ -154,24 +158,8 @@ class WaiterOrderService
 
     private function draftTotals(Order $order): void
     {
-        $subtotal = BigDecimal::of('0.00');
-        foreach ($order->items()->where('cancelled', false)->orderBy('id')->lockForUpdate()->get() as $item) {
-            $subtotal = $subtotal->plus(BigDecimal::of($item->unit_price)->multipliedBy($item->quantity));
-        }
-        // Draft taxes are assessed at confirmation against the locked current catalog.
-        $order->update($this->totals($order, $subtotal, BigDecimal::of('0.00')));
-    }
-
-    private function totals(Order $order, BigDecimal $subtotal, BigDecimal $tax): array
-    {
-        $total = $subtotal->plus($tax)->plus($order->delivery_fee ?? '0.00');
-        foreach ([$subtotal, $tax, $total] as $amount) {
-            if ($amount->isNegative() || $amount->isGreaterThan('99999999.99')) {
-                throw ValidationException::withMessages(['items' => __('Los importes de la orden exceden el rango permitido.')]);
-            }
-        }
-
-        return ['subtotal' => (string) $subtotal, 'tax_total' => (string) $tax, 'total' => (string) $total];
+        $items = $order->items()->where('cancelled', false)->orderBy('id')->lockForUpdate()->get();
+        $order->update(app(OrderTotals::class)->calculate($order, $items));
     }
 
     private function lockTaxRates(Collection $menus): array

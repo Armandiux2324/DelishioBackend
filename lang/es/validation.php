@@ -21,6 +21,7 @@ return [
     'boolean' => 'El campo :attribute debe ser verdadero o falso.',
     'regex' => 'El formato del campo :attribute no es válido.',
     'prohibited' => 'El campo :attribute está prohibido.',
+    'prohibits' => 'El campo :attribute prohíbe que :other esté presente.',
     'multiple_of' => 'El campo :attribute debe ser múltiplo de :value.',
     'date_format' => 'El campo :attribute no coincide con el formato :format.',
     'after_or_equal' => 'El campo :attribute debe ser una fecha posterior o igual a :date.',
@@ -51,6 +52,8 @@ return [
         'file' => 'El campo :attribute debe tener :size kilobytes.',
     ],
     'attributes' => [
+        'admin_user_id' => 'administrador autorizante', 'order_item_id' => 'elemento de orden',
+        'work_shift_id' => 'turno', 'kind' => 'tipo de ajuste',
         'service_type' => 'tipo de servicio', 'table_number' => 'número de mesa',
         'delivery_address' => 'dirección de entrega', 'delivery_fee' => 'tarifa de envío',
         'menu_item_id' => 'elemento de menú', 'modifiers' => 'modificadores', 'kitchen_notes' => 'notas para cocina',
