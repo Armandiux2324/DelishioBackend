@@ -2,7 +2,6 @@
 
 namespace App\Http\Resources;
 
-use Brick\Math\BigDecimal;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -20,8 +19,7 @@ class CustomerOrderResource extends JsonResource
         return ['id' => $this->id, 'restaurant_id' => $this->restaurant_id, 'source' => $this->source,
             'service_type' => $this->service_type, 'status' => $this->status, 'subtotal' => $this->subtotal,
             'tax_total' => $this->tax_total, 'discount_total' => $this->discount_total, 'total' => $this->total,
-            'dual_pricing_applied' => $this->dual_pricing_applied, 'created_at' => $this->created_at,
-            'dual_pricing_adjustment' => (string) BigDecimal::of($this->total)->minus($this->subtotal)->plus($this->discount_total)->minus($this->tax_total),
+            'loyalty_redeemed_amount' => $this->loyalty_redeemed_amount, 'surcharge_total' => $this->surcharge_total, 'created_at' => $this->created_at,
             'currency' => $this->whenLoaded('advancePayment', fn () => $this->advancePayment?->currency),
             'sent_at' => $this->sent_at, 'closed_at' => $this->closed_at,
             'preparation_status' => $this->whenLoaded('items', fn () => $preparation),
@@ -30,7 +28,7 @@ class CustomerOrderResource extends JsonResource
                 'quantity' => $item->quantity, 'unit_price' => $item->unit_price, 'modifiers' => $item->modifiers,
                 'kitchen_notes' => $item->kitchen_notes, 'status' => $item->status, 'cancelled' => $item->cancelled])),
             'advance_payment' => $this->whenLoaded('advancePayment', fn () => $this->advancePayment?->only([
-                'payment_confirmed', 'paid_at', 'currency', 'refund_pending', 'refunded_at'])),
+                'status', 'authorized_at', 'captured_at', 'currency', 'refund_attempts', 'refunded_at'])),
         ];
     }
 }

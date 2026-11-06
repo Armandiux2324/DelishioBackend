@@ -62,12 +62,19 @@ class OrderConfirmationService
             throw ValidationException::withMessages(['inventory' => __('Un ingrediente de la receta no está disponible.')]);
         }
         $errors = [];
+        $insufficient = [];
         foreach ($needed as $id => $quantity) {
             if (BigDecimal::of($stock[$id]->current_stock)->isLessThan($quantity)) {
                 $errors[] = __('Existencia insuficiente de :ingredient.', ['ingredient' => $stock[$id]->name]);
+                $insufficient[] = $id;
             }
         }
         if ($errors !== []) {
+            if ($order->source === 'customer_app') {
+                $affected = collect($deductions)->whereIn('inventory_item_id', $insufficient)->pluck('order_item_id');
+                $names = $items->whereIn('id', $affected)->pluck('menu_item_id')->unique()->map(fn ($id) => $menus[$id]->name);
+                throw ValidationException::withMessages(['items' => $names->map(fn ($name) => __('El elemento :item no está disponible.', ['item' => $name]))->all()]);
+            }
             throw ValidationException::withMessages(['inventory' => $errors]);
         }
 

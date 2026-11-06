@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -27,7 +28,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'dual_pricing_enabled',
     'dual_pricing_percentage',
     'created_by_user_id',
+    'stripe_account_id',
 ])]
+#[Hidden(['stripe_account_id'])]
 
 class Restaurant extends Model
 {

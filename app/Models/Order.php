@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-#[Fillable(['restaurant_id', 'waiter_employee_id', 'customer_id', 'source', 'service_type', 'table_number', 'delivery_address', 'delivery_fee', 'status', 'subtotal', 'tax_total', 'discount_total', 'dual_pricing_applied', 'tip_amount', 'total', 'cash_register_id', 'sent_at', 'closed_at'])]
+#[Fillable(['restaurant_id', 'waiter_employee_id', 'customer_id', 'source', 'service_type', 'table_number', 'delivery_address', 'delivery_fee', 'status', 'subtotal', 'tax_total', 'discount_total', 'loyalty_redeemed_amount', 'surcharge_total', 'tip_amount', 'total', 'cash_register_id', 'sent_at', 'closed_at'])]
 class Order extends Model
 {
     /** @use HasFactory<OrderFactory> */
@@ -19,12 +19,12 @@ class Order extends Model
 
     public const UPDATED_AT = null;
 
-    protected $attributes = ['status' => 'open', 'subtotal' => '0.00', 'tax_total' => '0.00', 'discount_total' => '0.00', 'dual_pricing_applied' => false, 'tip_amount' => '0.00', 'total' => '0.00'];
+    protected $attributes = ['status' => 'open', 'subtotal' => '0.00', 'tax_total' => '0.00', 'discount_total' => '0.00', 'loyalty_redeemed_amount' => '0.00', 'surcharge_total' => '0.00', 'tip_amount' => '0.00', 'total' => '0.00'];
 
     protected function casts(): array
     {
         return ['delivery_fee' => 'decimal:2', 'subtotal' => 'decimal:2', 'tax_total' => 'decimal:2', 'discount_total' => 'decimal:2',
-            'dual_pricing_applied' => 'boolean', 'tip_amount' => 'decimal:2', 'total' => 'decimal:2', 'created_at' => 'datetime', 'sent_at' => 'datetime', 'closed_at' => 'datetime'];
+            'loyalty_redeemed_amount' => 'decimal:2', 'surcharge_total' => 'decimal:2', 'tip_amount' => 'decimal:2', 'total' => 'decimal:2', 'created_at' => 'datetime', 'sent_at' => 'datetime', 'closed_at' => 'datetime'];
     }
 
     protected static function booted(): void

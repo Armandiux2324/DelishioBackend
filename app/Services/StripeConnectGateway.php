@@ -18,33 +18,65 @@ class StripeConnectGateway
     {
         return $this->request(fn (StripeClient $stripe) => $stripe->paymentIntents->create([
             'amount' => $this->minorUnits($payment->amount), 'currency' => strtolower($payment->currency),
-            'payment_method_types' => ['card'], 'metadata' => ['delishio_order_id' => (string) $payment->order_id],
+            'payment_method_types' => ['card'], 'capture_method' => 'manual', 'metadata' => ['delishio_order_id' => (string) $payment->order_id],
         ], ['stripe_account' => $payment->stripe_account_id, 'idempotency_key' => 'delishio-intent-'.$payment->request_key]));
     }
 
     public function retrieveIntent(AdvanceOrderPayment $payment): PaymentIntent
     {
-        return $this->request(fn (StripeClient $stripe) => $stripe->paymentIntents->retrieve($payment->payment_reference, [],
+        return $this->request(fn (StripeClient $stripe) => $stripe->paymentIntents->retrieve($payment->payment_intent_id, [],
             ['stripe_account' => $payment->stripe_account_id]));
+    }
+
+    public function captureIntent(AdvanceOrderPayment $payment): PaymentIntent
+    {
+        $intent = $this->retrieveIntent($payment);
+        if ($intent->status === 'succeeded') {
+            return $intent;
+        }
+        abort_unless($intent->status === 'requires_capture', 409, __('La autorización de pago ya no está disponible.'));
+
+        return $this->request(fn (StripeClient $stripe) => $stripe->paymentIntents->capture($payment->payment_intent_id, [],
+            ['stripe_account' => $payment->stripe_account_id, 'idempotency_key' => 'delishio-capture-'.$payment->request_key]));
+    }
+
+    public function voidIntent(AdvanceOrderPayment $payment): PaymentIntent
+    {
+        $intent = $this->retrieveIntent($payment);
+        if (in_array($intent->status, ['canceled', 'succeeded'], true)) {
+            return $intent;
+        }
+
+        return $this->request(fn (StripeClient $stripe) => $stripe->paymentIntents->cancel($payment->payment_intent_id, [],
+            ['stripe_account' => $payment->stripe_account_id, 'idempotency_key' => 'delishio-void-'.$payment->request_key]));
     }
 
     public function refund(AdvanceOrderPayment $payment): Refund
     {
         return $this->request(function (StripeClient $stripe) use ($payment) {
             $options = ['stripe_account' => $payment->stripe_account_id];
+            $failedReference = null;
             if ($payment->refund_reference !== null) {
-                return $stripe->refunds->retrieve($payment->refund_reference, [], $options);
+                $prior = $stripe->refunds->retrieve($payment->refund_reference, [], $options);
+                if (! in_array($prior->status, ['failed', 'canceled'], true)) {
+                    return $prior;
+                }
+                $failedReference = $prior->id;
             }
             // Recover a refund whose HTTP response or database commit was lost, even after Stripe's idempotency window.
             $refunded = 0;
             $last = null;
-            foreach ($stripe->refunds->all(['payment_intent' => $payment->payment_reference, 'limit' => 100], $options)->autoPagingIterator() as $refund) {
+            foreach ($stripe->refunds->all(['payment_intent' => $payment->payment_intent_id, 'limit' => 100], $options)->autoPagingIterator() as $refund) {
                 if ($refund->status === 'succeeded') {
                     $refunded += $refund->amount;
                     $last = $refund;
                 }
-                if (($refund->metadata->delishio_payment_id ?? null) === (string) $payment->id
-                    || ($refund->amount === $this->minorUnits($payment->amount) && $refund->status !== 'failed')) {
+                $ours = ($refund->metadata->delishio_payment_id ?? null) === (string) $payment->id;
+                if ($ours && in_array($refund->status, ['failed', 'canceled'], true)) {
+                    $failedReference ??= $refund->id;
+                }
+                if (! in_array($refund->status, ['failed', 'canceled'], true)
+                    && ($ours || $refund->amount === $this->minorUnits($payment->amount))) {
                     return $refund;
                 }
             }
@@ -52,9 +84,9 @@ class StripeConnectGateway
                 return $last;
             }
 
-            return $stripe->refunds->create(['payment_intent' => $payment->payment_reference,
+            return $stripe->refunds->create(['payment_intent' => $payment->payment_intent_id,
                 'metadata' => ['delishio_payment_id' => (string) $payment->id]],
-                $options + ['idempotency_key' => 'delishio-refund-'.$payment->request_key]);
+                $options + ['idempotency_key' => 'delishio-refund-'.$payment->request_key.'-'.($failedReference ?? 'initial')]);
         });
     }
 

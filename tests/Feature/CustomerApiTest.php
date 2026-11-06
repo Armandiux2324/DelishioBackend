@@ -17,10 +17,12 @@ use App\Models\Restaurant;
 use App\Models\SuperCategory;
 use App\Models\TaxClass;
 use App\Models\User;
+use App\Notifications\AdvanceOrderCancelled;
 use App\Services\StripeConnectGateway;
 use App\Support\RestaurantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
 use Stripe\PaymentIntent;
 use Stripe\Refund;
@@ -47,10 +49,14 @@ function clientIntent(int $order): string
 function clientEvent(int $order, array $intentOverrides = [], array $eventOverrides = [], int $offset = 0, string $secret = 'whsec_local')
 {
     $payment = AdvanceOrderPayment::withoutGlobalScope('restaurant')->where('order_id', $order)->firstOrFail();
-    $object = test()->intents[$payment->payment_reference]->toArray();
+    $object = test()->intents[$payment->payment_intent_id]->toArray();
     $object = array_replace_recursive($object, ['status' => 'succeeded', 'amount_received' => $object['amount']], $intentOverrides);
     $event = array_replace(['id' => 'evt_'.Str::random(12), 'object' => 'event', 'type' => 'payment_intent.succeeded',
         'created' => time(), 'livemode' => false, 'account' => $payment->stripe_account_id, 'data' => ['object' => $object]], $eventOverrides);
+    if ($object['id'] === $payment->payment_intent_id && $event['account'] === $payment->stripe_account_id
+        && in_array($event['type'], ['payment_intent.succeeded', 'payment_intent.amount_capturable_updated', 'payment_intent.canceled'], true)) {
+        test()->intents[$payment->payment_intent_id] = PaymentIntent::constructFrom($object);
+    }
     $body = json_encode($event, JSON_THROW_ON_ERROR);
     $timestamp = time() + $offset;
     $signature = hash_hmac('sha256', $timestamp.'.'.$body, $secret);
@@ -60,11 +66,12 @@ function clientEvent(int $order, array $intentOverrides = [], array $eventOverri
 }
 
 beforeEach(function () {
+    Notification::fake();
     $creator = User::factory()->create(['user_type' => 'super_admin']);
-    $this->a = Restaurant::create(['name' => 'A', 'currency' => 'USD', 'created_by_user_id' => $creator->id,
+    $this->a = Restaurant::create(['name' => 'A', 'stripe_account_id' => 'acct_A', 'currency' => 'USD', 'created_by_user_id' => $creator->id,
         'loyalty_enabled' => true, 'loyalty_factor' => '2.0000', 'loyalty_redeem_value' => '10.0000',
         'dual_pricing_enabled' => true, 'dual_pricing_percentage' => '3.00']);
-    $this->b = Restaurant::create(['name' => 'B', 'currency' => 'MXN', 'created_by_user_id' => $creator->id]);
+    $this->b = Restaurant::create(['name' => 'B', 'stripe_account_id' => 'acct_B', 'currency' => 'MXN', 'created_by_user_id' => $creator->id]);
     $this->adminA = app(RestaurantContext::class)->run($this->a, fn () => Employee::factory()->create(['role' => 'admin']))->user;
     $this->adminB = app(RestaurantContext::class)->run($this->b, fn () => Employee::factory()->create(['role' => 'admin']))->user;
     $this->waiterA = app(RestaurantContext::class)->run($this->a, fn () => Employee::factory()->create())->user;
@@ -86,9 +93,13 @@ beforeEach(function () {
     config(['services.stripe.secret' => 'sk_test_local', 'services.stripe.publishable_key' => 'pk_test_local',
         'services.stripe.webhook_secret' => 'whsec_local', 'services.stripe.livemode' => false,
         'services.stripe.accounts' => [$this->a->id => 'acct_A', $this->b->id => 'acct_B']]);
-    $this->intents = [];
+    $this->intents = new ArrayObject;
     $this->intentCreates = 0;
     $this->refunds = 0;
+    $this->captures = 0;
+    $this->voids = 0;
+    $this->captureLost = false;
+    $this->voidFailure = false;
     $this->refundStatus = 'succeeded';
     $this->refundFailure = false;
     $gateway = Mockery::mock(StripeConnectGateway::class)->makePartial();
@@ -99,9 +110,37 @@ beforeEach(function () {
         return $this->intents[$id] = PaymentIntent::constructFrom(['id' => $id, 'object' => 'payment_intent',
             'amount' => (new StripeConnectGateway)->minorUnits($payment->amount), 'amount_received' => 0,
             'currency' => strtolower($payment->currency), 'metadata' => ['delishio_order_id' => (string) $payment->order_id],
-            'client_secret' => $id.'_secret_local', 'status' => 'requires_payment_method']);
+            'client_secret' => $id.'_secret_local', 'capture_method' => 'manual', 'amount_capturable' => 0, 'status' => 'requires_payment_method']);
     });
-    $gateway->shouldReceive('retrieveIntent')->andReturnUsing(fn ($payment) => $this->intents[$payment->payment_reference]);
+    $gateway->shouldReceive('retrieveIntent')->andReturnUsing(fn ($payment) => $this->intents[$payment->payment_intent_id]);
+    $gateway->shouldReceive('captureIntent')->andReturnUsing(function ($payment) {
+        $intent = $this->intents[$payment->payment_intent_id];
+        if ($intent->status === 'succeeded') {
+            return $intent;
+        }
+        $this->captures++;
+        $data = $intent->toArray();
+        $data['status'] = 'succeeded';
+        $data['amount_received'] = $data['amount'];
+        $data['amount_capturable'] = 0;
+        $this->intents[$payment->payment_intent_id] = PaymentIntent::constructFrom($data);
+        abort_if($this->captureLost, 503, 'capture response lost');
+
+        return $this->intents[$payment->payment_intent_id];
+    });
+    $gateway->shouldReceive('voidIntent')->andReturnUsing(function ($payment) {
+        $intent = $this->intents[$payment->payment_intent_id];
+        if ($intent->status === 'succeeded' || $intent->status === 'canceled') {
+            return $intent;
+        }
+        abort_if($this->voidFailure, 503, 'void temporarily unavailable');
+        $this->voids++;
+        $data = $intent->toArray();
+        $data['status'] = 'canceled';
+        $data['amount_capturable'] = 0;
+
+        return $this->intents[$payment->payment_intent_id] = PaymentIntent::constructFrom($data);
+    });
     $gateway->shouldReceive('refund')->andReturnUsing(function ($payment) {
         $this->refunds++;
         abort_if($this->refundFailure, 503, 'refund temporarily unavailable');
@@ -109,6 +148,127 @@ beforeEach(function () {
         return Refund::constructFrom(['id' => 're_'.$payment->id, 'object' => 'refund', 'status' => $this->refundStatus]);
     });
     $this->app->instance(StripeConnectGateway::class, $gateway);
+});
+
+function clientAuthorize(int $order)
+{
+    $payment = AdvanceOrderPayment::withoutGlobalScope('restaurant')->where('order_id', $order)->firstOrFail();
+
+    return clientEvent($order, ['status' => 'requires_capture', 'amount_received' => 0,
+        'amount_capturable' => (new StripeConnectGateway)->minorUnits($payment->amount)],
+        ['type' => 'payment_intent.amount_capturable_updated']);
+}
+
+test('authorization captures only after inventory validation and records separated money', function () {
+    $id = clientOrder();
+    clientIntent($id);
+    clientAuthorize($id)->assertOk();
+    $this->artisan('payments:reconcile')->assertSuccessful();
+    $payment = AdvanceOrderPayment::withoutGlobalScope('restaurant')->where('order_id', $id)->sole();
+    expect($payment->status)->toBe('captured')->and($payment->authorized_at)->not->toBeNull()
+        ->and($payment->captured_at)->not->toBeNull()->and($this->captures)->toBe(1);
+    app(RestaurantContext::class)->run($this->a, function () {
+        expect(Payment::sole()->amount)->toBe('110.00')->and(Payment::sole()->surcharge_amount)->toBe('3.30')
+            ->and(LoyaltyTransaction::sole()->base_amount)->toBe('100.00')
+            ->and($this->ingredientA->fresh()->current_stock)->toBe('48.000');
+    });
+});
+
+test('insufficient stock voids an authorization and sends one localized cancellation', function () {
+    $this->customer->user->update(['locale' => 'es']);
+    $id = clientOrder();
+    clientIntent($id);
+    app(RestaurantContext::class)->run($this->a, fn () => $this->ingredientA->update(['current_stock' => '0.000']));
+    clientAuthorize($id)->assertOk();
+    $this->artisan('payments:reconcile')->assertSuccessful();
+    $payment = AdvanceOrderPayment::withoutGlobalScope('restaurant')->where('order_id', $id)->sole();
+    expect($payment->status)->toBe('voided')->and($payment->refund_attempts)->toBe(0)
+        ->and($this->captures)->toBe(0)->and($this->refunds)->toBe(0)->and($this->voids)->toBe(1);
+    Notification::assertSentTo($this->customer->user, AdvanceOrderCancelled::class, fn ($notification) => $notification->locale === 'es');
+    Notification::assertCount(1);
+    $this->getJson("/api/v1/customer/orders/$id")->assertOk()->assertJsonPath('data.status', 'cancelled');
+});
+
+test('a failed void retries after restocking without ever fulfilling a cancelled order', function () {
+    $id = clientOrder();
+    clientIntent($id);
+    app(RestaurantContext::class)->run($this->a, fn () => $this->ingredientA->update(['current_stock' => '0.000']));
+    $this->voidFailure = true;
+    clientAuthorize($id)->assertStatus(503);
+    $payment = AdvanceOrderPayment::withoutGlobalScope('restaurant')->where('order_id', $id)->sole();
+    expect($payment->status)->toBe('authorized')->and($payment->last_error)->not->toBeNull();
+    app(RestaurantContext::class)->run($this->a, fn () => $this->ingredientA->update(['current_stock' => '50.000']));
+    $this->voidFailure = false;
+    $this->artisan('payments:reconcile')->assertSuccessful();
+    expect($payment->fresh()->status)->toBe('voided')->and($this->captures)->toBe(0);
+    Notification::assertCount(1);
+});
+
+test('a lost capture response recovers the captured payment without charging or consuming twice', function () {
+    $id = clientOrder();
+    clientIntent($id);
+    $this->captureLost = true;
+    clientAuthorize($id)->assertStatus(503);
+    expect(AdvanceOrderPayment::withoutGlobalScope('restaurant')->where('order_id', $id)->sole()->status)->toBe('authorized');
+    app(RestaurantContext::class)->run($this->a, fn () => expect($this->ingredientA->fresh()->current_stock)->toBe('50.000'));
+    $this->captureLost = false;
+    $this->artisan('payments:reconcile')->assertSuccessful();
+    $this->artisan('payments:reconcile')->assertSuccessful();
+    expect($this->captures)->toBe(1)->and($this->refunds)->toBe(0);
+    $this->getJson("/api/v1/customer/orders/$id")->assertOk()->assertJsonPath('data.status', 'closed');
+    app(RestaurantContext::class)->run($this->a, fn () => expect($this->ingredientA->fresh()->current_stock)->toBe('48.000'));
+});
+
+test('a lost capture followed by unavailable stock refunds and retries beyond 255 attempts', function () {
+    $id = clientOrder();
+    clientIntent($id);
+    $this->captureLost = true;
+    clientAuthorize($id)->assertStatus(503);
+    app(RestaurantContext::class)->run($this->a, fn () => $this->ingredientA->update(['current_stock' => '0.000']));
+    $this->captureLost = false;
+    $this->refundStatus = 'failed';
+    $this->artisan('payments:reconcile')->assertSuccessful();
+    $payment = AdvanceOrderPayment::withoutGlobalScope('restaurant')->where('order_id', $id)->sole();
+    expect($payment->status)->toBe('refund_failed')->and($payment->refund_attempts)->toBe(1)->and($payment->last_error)->not->toBeNull();
+    DB::table('advance_order_payments')->where('id', $payment->id)->update(['refund_attempts' => 255]);
+    $this->refundStatus = 'succeeded';
+    $this->artisan('payments:reconcile')->assertSuccessful();
+    expect($payment->fresh()->status)->toBe('refunded')->and($payment->fresh()->refund_attempts)->toBe(256)
+        ->and($this->captures)->toBe(1)->and($this->refunds)->toBe(2);
+});
+
+test('mail failure remains recoverable even after the authorization is voided', function () {
+    $id = clientOrder();
+    clientIntent($id);
+    app(RestaurantContext::class)->run($this->a, fn () => $this->ingredientA->update(['current_stock' => '0.000']));
+    Notification::shouldReceive('send')->once()->andThrow(new RuntimeException('mail unavailable'));
+    clientAuthorize($id)->assertOk();
+    $payment = AdvanceOrderPayment::withoutGlobalScope('restaurant')->where('order_id', $id)->sole();
+    expect($payment->status)->toBe('voided')->and($payment->cancellation_notified_at)->toBeNull();
+    Notification::fake();
+    $this->artisan('payments:reconcile')->assertSuccessful();
+    $this->artisan('payments:reconcile')->assertSuccessful();
+    Notification::assertSentToTimes($this->customer->user, AdvanceOrderCancelled::class, 1);
+    expect($payment->fresh()->cancellation_notified_at)->not->toBeNull()->and($this->voids)->toBe(1);
+});
+
+test('customer stock errors identify the menu item instead of revealing ingredients', function () {
+    $id = clientOrder();
+    app(RestaurantContext::class)->run($this->a, fn () => $this->ingredientA->update(['current_stock' => '0.000', 'name' => 'Secret ingredient']));
+    $response = $this->postJson("/api/v1/customer/orders/$id/payment")->assertUnprocessable();
+    expect($response->getContent())->toContain('Menu A')->not->toContain('Secret ingredient');
+    $response = $this->postJson('/api/v1/customer/restaurants/'.$this->a->id.'/orders', ['items' => [['menu_item_id' => $this->menuA->id, 'quantity' => 1]]],
+        ['Idempotency-Key' => (string) Str::uuid()])->assertUnprocessable();
+    expect($response->getContent())->toContain('Menu A')->not->toContain('Secret ingredient');
+});
+
+test('removing a connected account prevents starting and capturing customer payments', function () {
+    $id = clientOrder();
+    clientIntent($id);
+    $this->a->update(['stripe_account_id' => null]);
+    $this->postJson("/api/v1/customer/orders/$id/payment")->assertStatus(503);
+    clientAuthorize($id)->assertOk();
+    expect($this->captures)->toBe(0)->and($this->voids)->toBe(1);
 });
 
 test('customers browse only active restaurants and a public menu without recipes or employee settings', function () {
@@ -130,8 +290,8 @@ test('advance checkout freezes totals and account without preparing or consuming
     $id = clientOrder();
     $this->getJson("/api/v1/customer/orders/$id")->assertOk()->assertJsonPath('data.status', 'open')
         ->assertJsonPath('data.total', '113.30')->assertJsonPath('data.tax_total', '10.00')
-        ->assertJsonPath('data.dual_pricing_applied', true)->assertJsonPath('data.preparation_status', 'pending')
-        ->assertJsonPath('data.advance_payment.payment_confirmed', false)->assertJsonMissingPath('data.advance_payment.stripe_account_id');
+        ->assertJsonPath('data.surcharge_total', '3.30')->assertJsonPath('data.preparation_status', 'pending')
+        ->assertJsonPath('data.advance_payment.status', 'pending')->assertJsonMissingPath('data.advance_payment.stripe_account_id');
     clientIntent($id);
     $this->postJson("/api/v1/customer/orders/$id/payment")->assertOk()->assertJsonPath('data.stripe_account_id', 'acct_A')
         ->assertJsonPath('data.currency', 'USD')->assertJsonPath('data.amount', '113.30')->assertJsonPath('data.publishable_key', 'pk_test_local');
@@ -149,10 +309,10 @@ test('signed Connect success fulfills exactly once credits integer consumption p
     clientEvent($id)->assertOk();
     expect($this->refunds)->toBe(0);
     $this->getJson("/api/v1/customer/orders/$id")->assertOk()->assertJsonPath('data.status', 'closed')
-        ->assertJsonPath('data.advance_payment.payment_confirmed', true)->assertJsonPath('data.preparation_status', 'pending');
+        ->assertJsonPath('data.advance_payment.status', 'captured')->assertJsonPath('data.preparation_status', 'pending');
     app(RestaurantContext::class)->run($this->a, function () {
         expect($this->ingredientA->fresh()->current_stock)->toBe('48.000')->and(InventoryMovement::count())->toBe(1)
-            ->and(Payment::sole()->amount)->toBe('113.30')->and(LoyaltyBalance::sole()->points_balance)->toBe('200.00')
+            ->and(Payment::sole()->amount)->toBe('110.00')->and(LoyaltyBalance::sole()->points_balance)->toBe('200.00')
             ->and(LoyaltyTransaction::sole()->points)->toBe('200.00')->and((string) $this->cashA->expectedCash())->toBe('20.00');
     });
     $this->actingAs($this->chefA, 'sanctum');
@@ -183,7 +343,7 @@ test('prices taxes currency and loyalty snapshot cannot change under an issued p
     $this->menuA->update(['sale_price' => '200.00']);
     TaxClass::query()->update(['percentage' => '20.00']);
     $this->a->update(['loyalty_factor' => '5.0000']);
-    config(['services.stripe.accounts.'.$this->a->id => 'acct_Replaced']);
+    $this->a->update(['stripe_account_id' => 'acct_Replaced']);
     clientEvent($id)->assertOk();
     $this->actingAs($this->customer->user, 'sanctum')->getJson("/api/v1/customer/orders/$id")->assertOk()
         ->assertJsonPath('data.total', '113.30')->assertJsonPath('data.tax_total', '10.00')->assertJsonPath('data.items.0.unit_price', '100.00');
@@ -223,6 +383,7 @@ test('foreign restaurant menu IDs and forged monetary or ownership fields are re
     [['stripe_account_id' => 'acct_evil'], 'stripe_account_id'], [['payment_confirmed' => true], 'payment_confirmed'],
     [['cash_register_id' => 1], 'cash_register_id'], [['service_type' => 'delivery'], 'service_type'],
     [['tip_amount' => 1], 'tip_amount'], [['redeem_points' => 10], 'redeem_points'],
+    [['loyalty_redeemed_amount' => 10], 'loyalty_redeemed_amount'], [['surcharge_total' => 0], 'surcharge_total'],
     [['promotion_id' => 1], 'promotion_id'], [['items' => []], 'items'],
     [['items' => [['menu_item_id' => 0, 'quantity' => 1]]], 'items'],
     [['items' => [['menu_item_id' => 1, 'quantity' => 0]]], 'items.0.quantity'],
@@ -242,7 +403,7 @@ test('cart creation validates open cash stock and configured Connect account', f
     } elseif ($state === 'stock') {
         app(RestaurantContext::class)->run($this->a, fn () => $this->ingredientA->update(['current_stock' => '1.000']));
     } else {
-        config(['services.stripe.accounts' => []]);
+        $this->a->update(['stripe_account_id' => null]);
     }
     $this->postJson('/api/v1/customer/restaurants/'.$this->a->id.'/orders',
         ['items' => [['menu_item_id' => $this->menuA->id, 'quantity' => 1]]], ['Idempotency-Key' => (string) Str::uuid()])->assertStatus($status);
@@ -258,14 +419,14 @@ test('Stripe signatures replay tolerance and mode are enforced before any fulfil
         'mode' => clientEvent($id, eventOverrides: ['livemode' => true]),
     };
     $response->assertBadRequest();
-    expect(AdvanceOrderPayment::withoutGlobalScope('restaurant')->sole()->payment_confirmed)->toBeFalse();
+    expect(AdvanceOrderPayment::withoutGlobalScope('restaurant')->sole()->status)->toBe('pending');
 })->with(['signature', 'expired', 'mode']);
 
 test('signed mismatched payment values cannot fulfill an order', function (array $changes) {
     $id = clientOrder();
     clientIntent($id);
     clientEvent($id, $changes)->assertBadRequest();
-    expect(AdvanceOrderPayment::withoutGlobalScope('restaurant')->sole()->payment_confirmed)->toBeFalse();
+    expect(AdvanceOrderPayment::withoutGlobalScope('restaurant')->sole()->status)->toBe('pending');
 })->with([
     [['amount' => 1]], [['currency' => 'mxn']], [['amount_received' => 1]], [['status' => 'processing']],
     [['metadata' => ['delishio_order_id' => '99999']]],
@@ -280,7 +441,7 @@ test('events from a different connected account unknown intents or unrelated typ
         'failed' => clientEvent($id, eventOverrides: ['type' => 'payment_intent.payment_failed']),
     };
     $response->assertOk();
-    expect(AdvanceOrderPayment::withoutGlobalScope('restaurant')->sole()->payment_confirmed)->toBeFalse()->and($this->refunds)->toBe(0);
+    expect(AdvanceOrderPayment::withoutGlobalScope('restaurant')->sole()->status)->toBe('pending')->and($this->refunds)->toBe(0);
     $this->postJson("/api/v1/customer/orders/$id/payment")->assertOk();
     expect($this->intentCreates)->toBe(1);
 })->with(['account', 'unknown', 'failed']);
@@ -305,8 +466,8 @@ test('paid orders that can no longer be fulfilled are cancelled and refunded wit
     clientEvent($id)->assertOk();
     clientEvent($id)->assertOk();
     $payment = AdvanceOrderPayment::withoutGlobalScope('restaurant')->sole();
-    expect($payment->refunded_at)->not->toBeNull()->and($payment->refund_pending)->toBeFalse()
-        ->and($payment->payment_confirmed)->toBeFalse()->and($this->refunds)->toBe(1)
+    expect($payment->refunded_at)->not->toBeNull()->and($payment->status)->toBe('refunded')
+        ->and($payment->status)->toBe('refunded')->and($this->refunds)->toBe(1)
         ->and(Order::withoutGlobalScope('restaurant')->sole()->status)->toBe('cancelled')
         ->and(DB::table('inventory_movements')->count())->toBe(0)->and(DB::table('payments')->count())->toBe(0)
         ->and(DB::table('loyalty_transactions')->count())->toBe(0);
@@ -326,7 +487,7 @@ test('rejection is durable when refund HTTP fails and retries cannot fulfill aft
     app(RestaurantContext::class)->run($this->a, fn () => $this->ingredientA->update(['current_stock' => '0.000']));
     $this->refundFailure = true;
     clientEvent($id)->assertStatus(503);
-    expect(AdvanceOrderPayment::withoutGlobalScope('restaurant')->sole()->refund_pending)->toBeTrue();
+    expect(AdvanceOrderPayment::withoutGlobalScope('restaurant')->sole()->status)->toBe('refund_failed');
     $this->refundFailure = false;
     app(RestaurantContext::class)->run($this->a, fn () => $this->ingredientA->update(['current_stock' => '50.000']));
     clientEvent($id)->assertOk();
@@ -340,7 +501,7 @@ test('pending refunds remain visible and the scheduled retry can finish them', f
     app(RestaurantContext::class)->run($this->a, fn () => $this->ingredientA->update(['current_stock' => '0.000']));
     $this->refundStatus = 'pending';
     clientEvent($id)->assertOk();
-    $this->getJson("/api/v1/customer/orders/$id")->assertOk()->assertJsonPath('data.advance_payment.refund_pending', true)
+    $this->getJson("/api/v1/customer/orders/$id")->assertOk()->assertJsonPath('data.advance_payment.status', 'refund_pending')
         ->assertJsonPath('data.advance_payment.refunded_at', null)->assertJsonMissingPath('data.advance_payment.refund_reference');
     $this->refundStatus = 'succeeded';
     $this->artisan('payments:retry-refunds')->assertExitCode(0);
@@ -477,7 +638,7 @@ test('items needing no preparation are ready only after verified payment', funct
 test('stock validation aggregates repeated ingredients across the entire customer cart', function () {
     $payload = ['items' => [['menu_item_id' => $this->menuA->id, 'quantity' => 15], ['menu_item_id' => $this->menuA->id, 'quantity' => 15]]];
     $this->postJson('/api/v1/customer/restaurants/'.$this->a->id.'/orders', $payload,
-        ['Idempotency-Key' => (string) Str::uuid()])->assertUnprocessable()->assertJsonValidationErrors('inventory');
+        ['Idempotency-Key' => (string) Str::uuid()])->assertUnprocessable()->assertJsonValidationErrors('items');
     expect(Order::withoutGlobalScope('restaurant')->count())->toBe(0)->and($this->intentCreates)->toBe(0);
 });
 

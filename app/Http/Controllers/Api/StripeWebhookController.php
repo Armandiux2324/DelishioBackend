@@ -24,17 +24,15 @@ class StripeWebhookController extends Controller
             abort(400, __('Firma de Stripe inválida.'));
         }
         abort_unless(is_bool($event->livemode) && $event->livemode === config('services.stripe.livemode'), 400);
-        if (in_array($event->type, ['payment_intent.succeeded', 'payment_intent.canceled'], true)) {
+        if (in_array($event->type, ['payment_intent.amount_capturable_updated', 'payment_intent.succeeded', 'payment_intent.canceled'], true)) {
             $intent = $event->data->object;
             abort_unless($intent instanceof PaymentIntent && is_string($intent->id) && is_string($event->account), 400);
-            $payment = AdvanceOrderPayment::withoutGlobalScope('restaurant')->where('payment_reference', $intent->id)
+            abort_if(($event->type === 'payment_intent.succeeded' && $intent->status !== 'succeeded')
+                || ($event->type === 'payment_intent.canceled' && $intent->status !== 'canceled'), 400);
+            $payment = AdvanceOrderPayment::withoutGlobalScope('restaurant')->where('payment_intent_id', $intent->id)
                 ->where('stripe_account_id', $event->account)->first();
             if ($payment !== null) {
-                if ($event->type === 'payment_intent.succeeded') {
-                    $service->acceptPayment($payment, $intent);
-                } else {
-                    $service->cancelPayment($payment, $intent);
-                }
+                $service->handleEvent($payment, $intent);
             }
         }
 

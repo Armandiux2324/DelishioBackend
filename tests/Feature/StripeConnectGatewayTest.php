@@ -49,13 +49,46 @@ test('the actual SDK sends server amount currency direct account and stable idem
     expect($call['method'])->toBe('post')->and($call['absUrl'])->toBe('https://api.stripe.com/v1/payment_intents')
         ->and($call['params']['amount'])->toBe(11330)->and($call['params']['currency'])->toBe('usd')
         ->and($call['params']['payment_method_types'])->toBe(['card'])
+        ->and($call['params']['capture_method'])->toBe('manual')
         ->and($call['params']['metadata']['delishio_order_id'])->toBe('42')
         ->and(implode("\n", $call['headers']))->toContain('Stripe-Account: acct_restaurant')
         ->toContain('Idempotency-Key: delishio-intent-11111111-1111-4111-8111-111111111111');
 });
 
+test('capture and void use the original connected account and stable operation keys', function (string $operation, string $status, string $endpoint) {
+    $this->payment->payment_intent_id = 'pi_existing';
+    $this->transport->responses = [
+        ['body' => ['object' => 'payment_intent', 'id' => 'pi_existing', 'status' => 'requires_capture']],
+        ['body' => ['object' => 'payment_intent', 'id' => 'pi_existing', 'status' => $status]],
+    ];
+    expect($this->gateway->{$operation.'Intent'}($this->payment)->status)->toBe($status);
+    $call = $this->transport->calls[1];
+    expect($call['method'])->toBe('post')->and($call['absUrl'])->toBe('https://api.stripe.com/v1/payment_intents/pi_existing/'.$endpoint)
+        ->and(implode("\n", $call['headers']))->toContain('Stripe-Account: acct_restaurant')
+        ->toContain('Idempotency-Key: delishio-'.$operation.'-'.$this->payment->request_key);
+})->with([['capture', 'succeeded', 'capture'], ['void', 'canceled', 'cancel']]);
+
+test('captured intents are recovered without another capture or cancellation', function (string $operation) {
+    $this->payment->payment_intent_id = 'pi_existing';
+    $this->transport->responses = [['body' => ['object' => 'payment_intent', 'id' => 'pi_existing', 'status' => 'succeeded']]];
+    expect($this->gateway->{$operation.'Intent'}($this->payment)->status)->toBe('succeeded')->and($this->transport->calls)->toHaveCount(1);
+})->with(['capture', 'void']);
+
+test('a definitively failed refund gets a new idempotency key after checking for recovery', function () {
+    $this->payment->payment_intent_id = 'pi_existing';
+    $this->payment->refund_reference = 're_failed';
+    $this->transport->responses = [
+        ['body' => ['object' => 'refund', 'id' => 're_failed', 'status' => 'failed']],
+        ['body' => ['object' => 'list', 'has_more' => false, 'data' => [], 'url' => '/v1/refunds']],
+        ['body' => ['object' => 'refund', 'id' => 're_retry', 'status' => 'pending']],
+    ];
+    expect($this->gateway->refund($this->payment)->id)->toBe('re_retry');
+    expect(implode("\n", $this->transport->calls[2]['headers']))
+        ->toContain('Idempotency-Key: delishio-refund-'.$this->payment->request_key.'-re_failed');
+});
+
 test('the SDK retrieves an existing intent on its captured account', function () {
-    $this->payment->payment_reference = 'pi_existing';
+    $this->payment->payment_intent_id = 'pi_existing';
     $this->transport->responses = [['body' => ['object' => 'payment_intent', 'id' => 'pi_existing']]];
     expect($this->gateway->retrieveIntent($this->payment)->id)->toBe('pi_existing');
     $call = $this->transport->calls[0];
@@ -64,7 +97,7 @@ test('the SDK retrieves an existing intent on its captured account', function ()
 });
 
 test('refund uses the same account searches for recovery first and requests the full remaining amount', function () {
-    $this->payment->payment_reference = 'pi_paid';
+    $this->payment->payment_intent_id = 'pi_paid';
     $this->transport->responses = [
         ['body' => ['object' => 'list', 'data' => [], 'has_more' => false, 'url' => '/v1/refunds']],
         ['body' => ['object' => 'refund', 'id' => 're_created', 'status' => 'succeeded']],
@@ -77,11 +110,11 @@ test('refund uses the same account searches for recovery first and requests the 
         ->and($create['params'])->not->toHaveKey('amount')->and($create['params']['payment_intent'])->toBe('pi_paid')
         ->and($create['params']['metadata']['delishio_payment_id'])->toBe('7')
         ->and(implode("\n", $create['headers']))->toContain('Stripe-Account: acct_restaurant')
-        ->toContain('Idempotency-Key: delishio-refund-11111111-1111-4111-8111-111111111111');
+        ->toContain('Idempotency-Key: delishio-refund-11111111-1111-4111-8111-111111111111-initial');
 });
 
 test('a refund recovered from Stripe does not create another refund after a lost local response', function () {
-    $this->payment->payment_reference = 'pi_paid';
+    $this->payment->payment_intent_id = 'pi_paid';
     $this->transport->responses = [['body' => ['object' => 'list', 'has_more' => false, 'url' => '/v1/refunds',
         'data' => [['object' => 'refund', 'id' => 're_found', 'amount' => 11330, 'status' => 'pending', 'metadata' => []]]]]];
     expect($this->gateway->refund($this->payment)->id)->toBe('re_found')->and($this->transport->calls)->toHaveCount(1);
@@ -95,7 +128,7 @@ test('saved refund references are polled instead of being created again', functi
 });
 
 test('already fully refunded external partial refunds do not cause another API refund', function () {
-    $this->payment->payment_reference = 'pi_paid';
+    $this->payment->payment_intent_id = 'pi_paid';
     $this->transport->responses = [['body' => ['object' => 'list', 'has_more' => false, 'url' => '/v1/refunds',
         'data' => [
             ['object' => 'refund', 'id' => 're_part_1', 'amount' => 4000, 'status' => 'succeeded', 'metadata' => []],

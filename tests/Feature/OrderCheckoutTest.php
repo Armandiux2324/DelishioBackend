@@ -64,7 +64,7 @@ test('cash checkout closes atomically and feeds register cash including the tip 
     $payload = checkoutPayments('120.25') + ['tip_amount' => '10.25'];
     $this->postJson("$url/close", $payload)->assertOk()->assertJsonPath('data.status', 'closed')
         ->assertJsonPath('data.tip_amount', '10.25')->assertJsonPath('data.total', '120.25')
-        ->assertJsonPath('data.dual_pricing_applied', false)->assertJsonPath('data.payments.0.amount', '120.25')
+        ->assertJsonPath('data.surcharge_total', '0.00')->assertJsonPath('data.payments.0.amount', '120.25')
         ->assertJsonCount(0, 'data.loyalty_transactions');
     $this->postJson("$url/close", $payload)->assertConflict();
     expect(Payment::count())->toBe(1)->and((string) $this->cash->expectedCash())->toBe('140.25');
@@ -77,23 +77,23 @@ test('cash checkout closes atomically and feeds register cash including the tip 
 test('dual pricing applies only to actual card funds in a mixed settlement', function () {
     $id = checkoutOrder();
     $payload = ['payments' => [['method' => 'cash', 'amount' => '40.00'], ['method' => 'transfer', 'amount' => '20.00'],
-        ['method' => 'card', 'amount' => '61.50']], 'tip_amount' => '10.00'];
+        ['method' => 'card', 'amount' => '60.00']], 'tip_amount' => '10.00'];
     $this->postJson("/api/v1/waiter/orders/$id/checkout-preview", $payload)->assertOk()
-        ->assertJsonPath('data.dual_pricing_adjustment', '1.50')->assertJsonPath('data.total', '121.50')
+        ->assertJsonPath('data.surcharge_total', '1.50')->assertJsonPath('data.total', '121.50')
         ->assertJsonPath('data.payment_difference', '0.00')->assertJsonPath('data.currency', 'USD');
     expect(Payment::count())->toBe(0)->and(Order::findOrFail($id)->status)->toBe('sent');
     $this->postJson("/api/v1/waiter/orders/$id/close", $payload)->assertOk()
-        ->assertJsonPath('data.dual_pricing_applied', true)->assertJsonPath('data.total', '121.50')->assertJsonCount(3, 'data.payments');
+        ->assertJsonPath('data.surcharge_total', '1.50')->assertJsonPath('data.total', '121.50')->assertJsonCount(3, 'data.payments');
     expect((string) $this->cash->expectedCash())->toBe('60.00');
 });
 
-test('single method card and transfer honor the configured dual pricing switch', function (string $method, bool $enabled, string $amount, bool $applied) {
+test('single method card and transfer honor the configured dual pricing switch', function (string $method, bool $enabled, string $amount, string $surcharge) {
     $this->a->update(['dual_pricing_enabled' => $enabled]);
     $id = checkoutOrder();
-    $this->postJson("/api/v1/waiter/orders/$id/close", checkoutPayments($amount, $method))->assertOk()
-        ->assertJsonPath('data.total', $amount)->assertJsonPath('data.dual_pricing_applied', $applied);
+    $this->postJson("/api/v1/waiter/orders/$id/close", checkoutPayments('110.00', $method))->assertOk()
+        ->assertJsonPath('data.total', $amount)->assertJsonPath('data.surcharge_total', $surcharge);
     expect((string) $this->cash->expectedCash())->toBe('20.00');
-})->with([['card', true, '113.30', true], ['card', false, '110.00', false], ['transfer', true, '110.00', false]]);
+})->with([['card', true, '113.30', '3.30'], ['card', false, '110.00', '0.00'], ['transfer', true, '110.00', '0.00']]);
 
 test('QR links a global customer and only creates the local affiliation', function () {
     app(RestaurantContext::class)->run($this->b, fn () => LoyaltyBalance::create(['customer_id' => $this->customer->user_id, 'points_balance' => '999.00']));
@@ -111,12 +111,12 @@ test('redemption and earning use separate immutable local ledger entries excludi
     $id = checkoutOrder();
     LoyaltyBalance::create(['customer_id' => $this->customer->user_id, 'points_balance' => '200.00']);
     $this->postJson("/api/v1/waiter/orders/$id/customer", ['qr_code' => $this->customer->qr_code])->assertOk();
-    $payload = checkoutPayments('111.97', 'card') + ['tip_amount' => '10.00', 'redeem_points' => '100.00'];
+    $payload = checkoutPayments('109.00', 'card') + ['tip_amount' => '10.00', 'redeem_points' => '100.00'];
     $this->postJson("/api/v1/waiter/orders/$id/checkout-preview", $payload)->assertOk()
-        ->assertJsonPath('data.redemption_amount', '10.00')->assertJsonPath('data.points_earned', '180.00')
-        ->assertJsonPath('data.points_balance', '280.00')->assertJsonPath('data.dual_pricing_adjustment', '2.97');
+        ->assertJsonPath('data.loyalty_redeemed_amount', '10.00')->assertJsonPath('data.points_earned', '180.00')
+        ->assertJsonPath('data.points_balance', '280.00')->assertJsonPath('data.surcharge_total', '2.97');
     expect(LoyaltyBalance::sole()->points_balance)->toBe('200.00')->and(LoyaltyTransaction::count())->toBe(0);
-    $this->postJson("/api/v1/waiter/orders/$id/close", $payload)->assertOk()->assertJsonPath('data.discount_total', '10.00')
+    $this->postJson("/api/v1/waiter/orders/$id/close", $payload)->assertOk()->assertJsonPath('data.discount_total', '0.00')->assertJsonPath('data.loyalty_redeemed_amount', '10.00')
         ->assertJsonCount(2, 'data.loyalty_transactions')->assertJsonPath('data.loyalty_transactions.0.type', 'redeem')
         ->assertJsonPath('data.loyalty_transactions.0.points', '100.00')->assertJsonPath('data.loyalty_transactions.1.points', '180.00');
     expect(LoyaltyBalance::sole()->points_balance)->toBe('280.00');
@@ -139,7 +139,7 @@ test('points round down to integers and cannot buy tip or exceed available local
     $this->postJson("/api/v1/waiter/orders/$id/customer", ['qr_code' => $this->customer->qr_code])->assertOk();
     LoyaltyBalance::sole()->update(['points_balance' => '400.00']);
     $this->postJson("/api/v1/waiter/orders/$id/checkout-preview", checkoutPayments('109.64') + ['redeem_points' => 1])->assertOk()
-        ->assertJsonPath('data.redemption_amount', '0.33')->assertJsonPath('data.points_earned', '12.00');
+        ->assertJsonPath('data.loyalty_redeemed_amount', '0.33')->assertJsonPath('data.points_earned', '12.00');
     foreach (['0.01', '300.03', '401.00'] as $points) {
         $this->postJson("/api/v1/waiter/orders/$id/close", checkoutPayments('1') + ['redeem_points' => $points, 'tip_amount' => 10])
             ->assertUnprocessable()->assertJsonValidationErrors('redeem_points');
@@ -191,6 +191,7 @@ test('checkout input validates money scales methods and server owned fields', fu
     [['redeem_points' => '1.001'], 'redeem_points'], [['redeem_points' => '-1'], 'redeem_points'],
     [['redeem_points' => '10000000000'], 'redeem_points'], [['total' => 0], 'total'],
     [['discount_total' => 100], 'discount_total'], [['customer_id' => 1], 'customer_id'],
+    [['loyalty_redeemed_amount' => 100], 'loyalty_redeemed_amount'], [['surcharge_total' => 0], 'surcharge_total'],
     [['dual_pricing_applied' => false], 'dual_pricing_applied'], [['loyalty_factor' => 100], 'loyalty_factor'],
 ]);
 
@@ -398,7 +399,7 @@ test('validation messages respect the waiter language', function () {
     $this->waiter->update(['locale' => 'en']);
     $id = checkoutOrder();
     $this->postJson("/api/v1/waiter/orders/$id/close", checkoutPayments('1'))->assertUnprocessable()
-        ->assertJsonPath('errors.payments.0', 'Payments must add up to exactly 113.27.');
+        ->assertJsonPath('errors.payments.0', 'Base payment amounts must add up to exactly 110.00.');
 });
 
 test('preview determines the remaining card charge before the waiter registers it without surcharging tip', function () {
@@ -408,9 +409,9 @@ test('preview determines the remaining card charge before the waiter registers i
     LoyaltyBalance::sole()->update(['points_balance' => '100.00']);
     $payload = checkoutPayments('40.00') + ['tip_amount' => 10, 'redeem_points' => 100];
     $this->postJson("$url/checkout-preview", $payload)->assertOk()->assertJsonPath('data.tax_total', '9.00')
-        ->assertJsonPath('data.card_amount', '70.77')->assertJsonPath('data.dual_pricing_adjustment', '1.77')
+        ->assertJsonPath('data.card_amount', '69.00')->assertJsonPath('data.surcharge_total', '1.77')
         ->assertJsonPath('data.total', '110.77')->assertJsonPath('data.points_earned', '180.00');
-    $payload['payments'][] = ['method' => 'card', 'amount' => '70.77'];
+    $payload['payments'][] = ['method' => 'card', 'amount' => '69.00'];
     $this->postJson("$url/close", $payload)->assertOk()->assertJsonPath('data.total', '110.77');
     expect(LoyaltyBalance::sole()->points_balance)->toBe('180.00');
 });
@@ -420,7 +421,7 @@ test('a card used only for tip never receives a dual pricing adjustment', functi
     $payload = checkoutPayments() + ['tip_amount' => '10.00'];
     $payload['payments'][] = ['method' => 'card', 'amount' => '10.00'];
     $this->postJson("/api/v1/waiter/orders/$id/close", $payload)->assertOk()
-        ->assertJsonPath('data.total', '120.00')->assertJsonPath('data.dual_pricing_applied', false);
+        ->assertJsonPath('data.total', '120.00')->assertJsonPath('data.surcharge_total', '0.00');
 });
 
 test('redemption is allocated after existing discounts before each tax class with stable cent rounding', function () {
@@ -437,7 +438,7 @@ test('redemption is allocated after existing discounts before each tax class wit
     $this->postJson("/api/v1/waiter/orders/$id/customer", ['qr_code' => $this->customer->qr_code])->assertOk();
     LoyaltyBalance::sole()->update(['points_balance' => '200.00']);
     $this->postJson("/api/v1/waiter/orders/$id/close", checkoutPayments('147.34') + ['redeem_points' => 100])->assertOk()
-        ->assertJsonPath('data.subtotal', '150.00')->assertJsonPath('data.discount_total', '20.00')
+        ->assertJsonPath('data.subtotal', '150.00')->assertJsonPath('data.discount_total', '10.00')
         ->assertJsonPath('data.tax_total', '17.34')->assertJsonPath('data.total', '147.34')
         ->assertJsonPath('data.loyalty_transactions.1.points', '260.00');
 });

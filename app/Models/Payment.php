@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Builders\RestaurantBuilder;
+use Brick\Math\BigDecimal;
 use Database\Factories\PaymentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -10,7 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['order_id', 'method', 'amount'])]
+#[Fillable(['order_id', 'method', 'amount', 'surcharge_amount'])]
 class Payment extends Model
 {
     /** @use HasFactory<PaymentFactory> */
@@ -18,15 +19,21 @@ class Payment extends Model
 
     public const UPDATED_AT = null;
 
+    protected $attributes = ['surcharge_amount' => '0.00'];
+
     protected function casts(): array
     {
-        return ['amount' => 'decimal:2', 'created_at' => 'datetime'];
+        return ['amount' => 'decimal:2', 'surcharge_amount' => 'decimal:2', 'created_at' => 'datetime'];
     }
 
     protected static function booted(): void
     {
         static::addGlobalScope('restaurant', fn (Builder $query) => $query->whereHas('order'));
         static::creating(fn (Payment $payment) => abort_unless(Order::whereKey($payment->order_id)->exists(), 403));
+        static::creating(function (Payment $payment) {
+            $surcharge = BigDecimal::of($payment->surcharge_amount);
+            abort_if($surcharge->isNegative() || ($payment->method !== 'card' && ! $surcharge->isZero()), 422);
+        });
         static::updating(fn () => abort(403));
         static::deleting(fn () => abort(403));
     }

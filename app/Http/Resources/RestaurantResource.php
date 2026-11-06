@@ -19,6 +19,7 @@ class RestaurantResource extends JsonResource
             'schedule' => $this->schedule,
             'currency' => $this->currency,
             'status' => $this->status,
+            'stripe_account_id' => $this->when($request->user()?->user_type === 'super_admin', fn () => $this->stripe_account_id),
             'created_at' => $this->created_at,
         ];
     }
