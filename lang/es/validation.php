@@ -54,6 +54,9 @@ return [
         'file' => 'El campo :attribute debe tener :size kilobytes.',
     ],
     'attributes' => [
+        'platform' => 'plataforma', 'total_amount' => 'monto total', 'commission_amount' => 'comisión',
+        'net_amount' => 'monto neto', 'sale_date' => 'fecha de venta',
+        'items.*.description' => 'descripción', 'items.*.unit_price' => 'precio unitario',
         'stripe_account_id' => 'cuenta Stripe', 'surcharge_total' => 'recargo total', 'surcharge_amount' => 'recargo del pago',
         'loyalty_redeemed_amount' => 'importe canjeado', 'base_amount' => 'consumo base',
         'request_key' => 'clave de idempotencia', 'items' => 'elementos',

@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\Admin\TaxClassController;
 use App\Http\Controllers\Api\CashRegisterController;
 use App\Http\Controllers\Api\Chef\QueueController;
 use App\Http\Controllers\Api\Customer\CustomerApiController;
+use App\Http\Controllers\Api\ExternalPlatformSaleController;
 use App\Http\Controllers\Api\RestaurantController;
 use App\Http\Controllers\Api\StripeWebhookController;
 use App\Http\Controllers\Api\Waiter\MenuItemController as WaiterMenuItemController;
@@ -72,6 +73,7 @@ Route::prefix('v1')->group(function () {
         Route::post('work-shifts/{work_shift}/clock-out', [WorkShiftController::class, 'clockOut']);
     });
     Route::middleware(['auth:sanctum', 'account.active', 'role:admin,waiter'])->group(function () {
+        Route::apiResource('external-platform-sales', ExternalPlatformSaleController::class)->only(['index', 'show', 'store']);
         Route::apiResource('cash-registers', CashRegisterController::class)->only(['index', 'show', 'store']);
     });
     Route::post('cash-registers/{cash_register}/close', [CashRegisterController::class, 'close'])
