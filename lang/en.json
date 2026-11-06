@@ -1,4 +1,7 @@
 {
+    "El elemento no está disponible para preparación.": "The item is not available for preparation.",
+    "La transición de preparación no está permitida.": "The preparation transition is not allowed.",
+    "El Chef no tiene una estación de preparación válida.": "The chef does not have a valid preparation station.",
     "El cliente no está disponible.": "The customer is not available.",
     "La orden ya tiene un cobro registrado.": "The order already has a recorded payment.",
     "Los pagos deben sumar exactamente :total.": "Payments must add up to exactly :total.",

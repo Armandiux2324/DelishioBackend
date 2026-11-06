@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\Admin\RestaurantConfigurationController;
 use App\Http\Controllers\Api\Admin\SuperCategoryController;
 use App\Http\Controllers\Api\Admin\TaxClassController;
 use App\Http\Controllers\Api\CashRegisterController;
+use App\Http\Controllers\Api\Chef\QueueController;
 use App\Http\Controllers\Api\RestaurantController;
 use App\Http\Controllers\Api\Waiter\MenuItemController as WaiterMenuItemController;
 use App\Http\Controllers\Api\Waiter\OrderAdjustmentController;
@@ -29,6 +30,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
+    Route::middleware(['auth:sanctum', 'account.active', 'role:chef'])->prefix('chef')->name('chef.')->group(function () {
+        Route::get('queue', [QueueController::class, 'index']);
+        Route::patch('queue/{item}', [QueueController::class, 'update']);
+    });
     Route::middleware(['auth:sanctum', 'account.active', 'role:waiter'])->prefix('waiter')->name('waiter.')->scopeBindings()->group(function () {
         Route::get('admin-authorizers', [OrderAdjustmentController::class, 'authorizers']);
         Route::apiResource('menu-items', WaiterMenuItemController::class)->only(['index', 'show']);
