@@ -1,6 +1,13 @@
 <?php
 
 return [
+    'stripe' => [
+        'secret' => env('STRIPE_SECRET_KEY'),
+        'publishable_key' => env('STRIPE_PUBLISHABLE_KEY'),
+        'webhook_secret' => env('STRIPE_CONNECT_WEBHOOK_SECRET'),
+        'livemode' => (bool) env('STRIPE_LIVEMODE', false),
+        'accounts' => json_decode(env('STRIPE_CONNECTED_ACCOUNTS', '{}'), true) ?? [],
+    ],
 
     /*
     |--------------------------------------------------------------------------
