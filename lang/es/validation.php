@@ -54,6 +54,7 @@ return [
         'file' => 'El campo :attribute debe tener :size kilobytes.',
     ],
     'attributes' => [
+        'status' => 'estado', 'page' => 'página',
         'payments' => 'pagos', 'payments.*.method' => 'método de pago', 'payments.*.amount' => 'importe del pago',
         'tip_amount' => 'propina', 'redeem_points' => 'puntos a canjear', 'qr_code' => 'código QR del cliente',
         'admin_user_id' => 'administrador autorizante', 'order_item_id' => 'elemento de orden',
