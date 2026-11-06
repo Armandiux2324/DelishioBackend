@@ -44,6 +44,7 @@ class UpdateRestaurantConfigurationRequest extends FormRequest
             'dual_pricing_enabled' => ['sometimes', 'required', 'boolean'],
             'dual_pricing_percentage' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:999.99', 'decimal:0,2'],
             'id' => ['missing'],
+            'stripe_account_id' => ['missing'],
             'restaurant_id' => ['missing'],
             'status' => ['missing'],
             'created_by_user_id' => ['missing'],

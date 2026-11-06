@@ -36,6 +36,7 @@ class StoreAdvanceOrderRequest extends FormRequest
             'subtotal' => ['missing'], 'tax_total' => ['missing'], 'discount_total' => ['missing'], 'tip_amount' => ['missing'],
             'delivery_fee' => ['missing'], 'delivery_address' => ['missing'], 'table_number' => ['missing'],
             'stripe_account_id' => ['missing'], 'payment_reference' => ['missing'], 'payment_confirmed' => ['missing'],
-            'redeem_points' => ['missing'], 'promotion_id' => ['missing'], 'dual_pricing_applied' => ['missing']];
+            'redeem_points' => ['missing'], 'promotion_id' => ['missing'], 'dual_pricing_applied' => ['missing'],
+            'loyalty_redeemed_amount' => ['missing'], 'surcharge_total' => ['missing'], 'payment_intent_id' => ['missing']];
     }
 }

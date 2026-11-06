@@ -64,9 +64,9 @@ class OrderCheckoutService
             $calculation = $this->calculate($order, $data, $balance);
             $quote = $calculation['quote'];
             if ($quote['payment_difference'] !== '0.00') {
-                throw ValidationException::withMessages(['payments' => __('Los pagos deben sumar exactamente :total.', ['total' => $quote['total']])]);
+                throw ValidationException::withMessages(['payments' => __('Los importes base de los pagos deben sumar exactamente :total.', ['total' => $quote['payment_base_total']])]);
             }
-            foreach ($data['payments'] as $payment) {
+            foreach ($calculation['payments'] as $payment) {
                 Payment::create(['order_id' => $order->id, ...$payment]);
             }
             if ($order->customer_id !== null && ($calculation['redeem']->isPositive() || $calculation['earn']->isPositive())) {
@@ -75,12 +75,12 @@ class OrderCheckoutService
                 foreach (['redeem', 'earn'] as $type) {
                     if ($calculation[$type]->isPositive()) {
                         LoyaltyTransaction::create(['customer_id' => $order->customer_id, 'order_id' => $order->id,
-                            'type' => $type, 'points' => (string) $calculation[$type]]);
+                            'type' => $type, 'points' => (string) $calculation[$type], 'base_amount' => $type === 'earn' ? $calculation['base_amount'] : null]);
                     }
                 }
             }
             $order->update(['subtotal' => $quote['subtotal'], 'tax_total' => $quote['tax_total'],
-                'discount_total' => $quote['discount_total'], 'dual_pricing_applied' => $quote['dual_pricing_applied'],
+                'discount_total' => $quote['discount_total'], 'loyalty_redeemed_amount' => $quote['loyalty_redeemed_amount'], 'surcharge_total' => $quote['surcharge_total'],
                 'tip_amount' => $quote['tip_amount'], 'total' => $quote['total'], 'status' => 'closed', 'closed_at' => now()]);
 
             return $this->result($order);
@@ -133,6 +133,11 @@ class OrderCheckoutService
         }
         $consumption = $base->minus($redemption);
         $total = $bill->plus($tip)->plus($adjustment);
+        $payments = array_map(fn ($payment) => ['method' => $payment['method'], 'amount' => $payment['amount'],
+            'surcharge_amount' => $payment['method'] === 'card' ? (string) $adjustment : '0.00'], $data['payments']);
+        $hasCard = collect($payments)->contains('method', 'card');
+        $charged = $hasCard ? $paid->plus($adjustment) : $paid;
+        $cardBase = $bill->plus($tip)->isGreaterThan($nonCard) ? $bill->plus($tip)->minus($nonCard) : BigDecimal::of('0.00');
         if ($restaurant->loyalty_enabled && $order->customer_id !== null) {
             if ($restaurant->loyalty_factor === null || BigDecimal::of($restaurant->loyalty_factor)->isLessThanOrEqualTo(0)) {
                 throw ValidationException::withMessages(['payments' => __('Configura el factor de puntos de lealtad.')]);
@@ -150,13 +155,12 @@ class OrderCheckoutService
             }
         }
 
-        return ['redeem' => $redeem, 'earn' => $earn, 'balance' => $newBalance, 'quote' => [
+        return ['redeem' => $redeem, 'earn' => $earn, 'balance' => $newBalance, 'base_amount' => (string) $consumption, 'payments' => $payments, 'quote' => [
             'currency' => $restaurant->currency, 'subtotal' => $totals['subtotal'], 'tax_total' => $totals['tax_total'],
-            'discount_total' => (string) $discount, 'redemption_amount' => (string) $redemption,
-            'tip_amount' => (string) $tip, 'dual_pricing_applied' => $adjustment->isPositive(),
-            'dual_pricing_adjustment' => (string) $adjustment, 'total' => (string) $total,
-            'card_amount' => (string) ($total->isGreaterThan($nonCard) ? $total->minus($nonCard) : BigDecimal::of('0.00')),
-            'payment_total' => (string) $paid, 'payment_difference' => (string) $paid->minus($total),
+            'discount_total' => (string) $discount, 'loyalty_redeemed_amount' => (string) $redemption,
+            'tip_amount' => (string) $tip, 'surcharge_total' => (string) $adjustment, 'total' => (string) $total,
+            'card_amount' => (string) $cardBase, 'card_charge_total' => (string) $cardBase->plus($adjustment),
+            'payment_base_total' => (string) $bill->plus($tip), 'payment_total' => (string) $charged, 'payment_difference' => (string) $charged->minus($total),
             'points_redeemed' => (string) $redeem, 'points_earned' => (string) $earn, 'points_balance' => (string) $newBalance,
         ]];
     }

@@ -46,7 +46,7 @@ class CashRegisterController extends Controller
             abort_if($register->closed_at !== null, 409, __('La caja ya está cerrada.'));
             abort_if(Order::where('cash_register_id', $register->id)->whereIn('status', ['open', 'sent'])
                 ->where(fn ($orders) => $orders->where('source', '!=', 'customer_app')->orWhereDoesntHave('advancePayment')
-                    ->orWhereHas('advancePayment', fn ($payment) => $payment->where('payment_confirmed', true)))->exists(),
+                    ->orWhereHas('advancePayment', fn ($payment) => $payment->where('status', 'captured')))->exists(),
                 409, __('La caja tiene órdenes pendientes de cerrar o cancelar.'));
             $expected = $register->expectedCash();
             if ($expected->isNegative() || $expected->isGreaterThan('99999999.99')) {

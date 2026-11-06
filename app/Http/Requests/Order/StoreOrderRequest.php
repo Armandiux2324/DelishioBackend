@@ -25,6 +25,7 @@ class StoreOrderRequest extends FormRequest
             'tax_total' => ['missing'], 'discount_total' => ['missing'], 'dual_pricing_applied' => ['missing'], 'tip_amount' => ['missing'],
             'total' => ['missing'], 'created_at' => ['missing'], 'sent_at' => ['missing'], 'closed_at' => ['missing'],
             'items' => ['missing'],
+            'loyalty_redeemed_amount' => ['missing'], 'surcharge_total' => ['missing'],
         ];
     }
 }

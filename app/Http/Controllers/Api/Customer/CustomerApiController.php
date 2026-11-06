@@ -82,7 +82,8 @@ class CustomerApiController extends Controller
     public function payment(Request $request, string $order, CustomerOrderService $service): JsonResponse
     {
         $request->validate(array_fill_keys(['amount', 'total', 'currency', 'stripe_account_id', 'customer_id', 'restaurant_id',
-            'payment_reference', 'payment_confirmed', 'status', 'card_number', 'cvv', 'card', 'payment_method'], ['missing']));
+            'payment_reference', 'payment_confirmed', 'status', 'card_number', 'cvv', 'card', 'payment_method',
+            'payment_intent_id', 'refund_attempts', 'authorized_at', 'captured_at', 'surcharge_total', 'loyalty_redeemed_amount'], ['missing']));
         $order = $this->owned($request, $order);
         $restaurant = Restaurant::findOrFail($order->restaurant_id);
 

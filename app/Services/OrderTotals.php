@@ -41,6 +41,7 @@ class OrderTotals
     {
         $items ??= $order->items()->where('cancelled', false)->orderBy('id')->get();
         $basis = $this->basis($order, $items);
+        $beforeRedemption = array_reduce($basis['lines'], fn ($sum, $line) => $sum->plus($line), BigDecimal::of('0.00'));
         $this->allocate($basis['lines'], BigDecimal::of($redemptionAmount));
         $rates ??= $order->status === 'sent' || $order->sent_at !== null ? $this->taxRates($items) : [];
         $exemptions = $order->taxExemptions()->get();
@@ -54,18 +55,19 @@ class OrderTotals
                 $tax = $tax->plus($base->multipliedBy($rates[$item->menu_item_id] ?? '0.00')->dividedBy(100, 2, RoundingMode::HalfUp));
             }
         }
-        $discount = $basis['subtotal']->minus($net);
+        $discount = $basis['subtotal']->minus($beforeRedemption);
+        $redeemed = $beforeRedemption->minus($net);
         $total = $net->plus($tax)->plus($order->delivery_fee ?? '0.00');
         if ($order->status === 'cancelled') {
-            return ['subtotal' => '0.00', 'discount_total' => '0.00', 'tax_total' => '0.00', 'total' => '0.00'];
+            return ['subtotal' => '0.00', 'discount_total' => '0.00', 'loyalty_redeemed_amount' => '0.00', 'tax_total' => '0.00', 'total' => '0.00'];
         }
-        foreach ([$basis['subtotal'], $discount, $tax, $total] as $amount) {
+        foreach ([$basis['subtotal'], $discount, $redeemed, $tax, $total] as $amount) {
             if ($amount->isNegative() || $amount->isGreaterThan('99999999.99')) {
                 throw ValidationException::withMessages(['items' => __('Los importes de la orden exceden el rango permitido.')]);
             }
         }
 
-        return ['subtotal' => (string) $basis['subtotal'], 'discount_total' => (string) $discount, 'tax_total' => (string) $tax, 'total' => (string) $total];
+        return ['subtotal' => (string) $basis['subtotal'], 'discount_total' => (string) $discount, 'loyalty_redeemed_amount' => (string) $redeemed, 'tax_total' => (string) $tax, 'total' => (string) $total];
     }
 
     private function allocate(array &$lines, BigDecimal $amount): void

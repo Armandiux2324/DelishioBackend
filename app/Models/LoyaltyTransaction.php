@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['customer_id', 'restaurant_id', 'order_id', 'type', 'points'])]
+#[Fillable(['customer_id', 'restaurant_id', 'order_id', 'type', 'points', 'base_amount'])]
 class LoyaltyTransaction extends Model
 {
     /** @use HasFactory<LoyaltyTransactionFactory> */
@@ -19,7 +19,7 @@ class LoyaltyTransaction extends Model
 
     protected function casts(): array
     {
-        return ['points' => 'decimal:2', 'created_at' => 'datetime'];
+        return ['points' => 'decimal:2', 'base_amount' => 'decimal:2', 'created_at' => 'datetime'];
     }
 
     protected static function booted(): void
