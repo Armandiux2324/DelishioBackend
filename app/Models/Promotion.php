@@ -3,8 +3,10 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToRestaurant;
+use Carbon\CarbonInterface;
 use Database\Factories\PromotionFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -28,6 +30,28 @@ class Promotion extends Model
     public function menuItems(): BelongsToMany
     {
         return $this->belongsToMany(MenuItem::class, 'promotion_menu_items')->using(PromotionMenuItem::class);
+    }
+
+    public function scopeCurrentlyAvailable(Builder $query): Builder
+    {
+        $now = now();
+        $time = $now->format('H:i:s');
+        $day = function (Builder $window, CarbonInterface $date): void {
+            $window->where('valid_from', '<=', $date->toDateString())->where('valid_to', '>=', $date->toDateString())
+                ->where(fn ($days) => $days->whereNull('days_of_week')->orWhere('days_of_week', 'like', '%'.$date->format('D').'%'));
+        };
+
+        return $query->where('active', true)->where(function (Builder $windows) use ($day, $now, $time) {
+            $windows->where(function (Builder $today) use ($day, $now, $time) {
+                $day($today, $now);
+                $today->where(fn ($hours) => $hours->whereNull('time_start')->orWhere(fn ($normal) => $normal
+                    ->whereColumn('time_start', '<', 'time_end')->where('time_start', '<=', $time)->where('time_end', '>=', $time))
+                    ->orWhere(fn ($late) => $late->whereColumn('time_start', '>', 'time_end')->where('time_start', '<=', $time)));
+            })->orWhere(function (Builder $yesterday) use ($day, $now, $time) {
+                $day($yesterday, $now->copy()->subDay());
+                $yesterday->whereColumn('time_start', '>', 'time_end')->where('time_end', '>=', $time);
+            });
+        });
     }
 
     public function categories(): BelongsToMany

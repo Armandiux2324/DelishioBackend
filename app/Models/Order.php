@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable(['restaurant_id', 'waiter_employee_id', 'customer_id', 'source', 'service_type', 'table_number', 'delivery_address', 'delivery_fee', 'status', 'subtotal', 'tax_total', 'discount_total', 'dual_pricing_applied', 'tip_amount', 'total', 'cash_register_id', 'sent_at', 'closed_at'])]
 class Order extends Model
@@ -52,6 +53,11 @@ class Order extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
+    }
+
+    public function advancePayment(): HasOne
+    {
+        return $this->hasOne(AdvanceOrderPayment::class);
     }
 
     public function loyaltyTransactions(): HasMany

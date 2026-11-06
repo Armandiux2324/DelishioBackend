@@ -13,7 +13,9 @@ use App\Http\Controllers\Api\Admin\SuperCategoryController;
 use App\Http\Controllers\Api\Admin\TaxClassController;
 use App\Http\Controllers\Api\CashRegisterController;
 use App\Http\Controllers\Api\Chef\QueueController;
+use App\Http\Controllers\Api\Customer\CustomerApiController;
 use App\Http\Controllers\Api\RestaurantController;
+use App\Http\Controllers\Api\StripeWebhookController;
 use App\Http\Controllers\Api\Waiter\MenuItemController as WaiterMenuItemController;
 use App\Http\Controllers\Api\Waiter\OrderAdjustmentController;
 use App\Http\Controllers\Api\Waiter\OrderCheckoutController;
@@ -30,6 +32,18 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
+    Route::post('stripe/webhook', StripeWebhookController::class);
+    Route::middleware(['auth:sanctum', 'account.active', 'role:customer'])->prefix('customer')->group(function () {
+        Route::get('restaurants', [CustomerApiController::class, 'restaurants']);
+        Route::get('restaurants/{restaurant}', [CustomerApiController::class, 'restaurant']);
+        Route::get('restaurants/{restaurant}/menu', [CustomerApiController::class, 'menu']);
+        Route::get('restaurants/{restaurant}/promotions', [CustomerApiController::class, 'promotions']);
+        Route::post('restaurants/{restaurant}/orders', [CustomerApiController::class, 'store'])->middleware('throttle:10,1');
+        Route::get('orders', [CustomerApiController::class, 'orders']);
+        Route::get('orders/{order}', [CustomerApiController::class, 'show'])->whereNumber('order');
+        Route::post('orders/{order}/payment', [CustomerApiController::class, 'payment'])->whereNumber('order')->middleware('throttle:10,1');
+        Route::get('loyalty-balances', [CustomerApiController::class, 'points']);
+    });
     Route::middleware(['auth:sanctum', 'account.active', 'role:chef'])->prefix('chef')->name('chef.')->group(function () {
         Route::get('queue', [QueueController::class, 'index']);
         Route::patch('queue/{item}', [QueueController::class, 'update']);

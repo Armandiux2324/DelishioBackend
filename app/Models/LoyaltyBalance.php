@@ -34,4 +34,9 @@ class LoyaltyBalance extends Model
     {
         return $this->belongsTo(Customer::class, 'customer_id', 'user_id');
     }
+
+    public function restaurant(): BelongsTo
+    {
+        return $this->belongsTo(Restaurant::class)->withTrashed();
+    }
 }

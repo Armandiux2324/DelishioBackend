@@ -1,4 +1,12 @@
 {
+    "El modo de Stripe no coincide con la clave configurada.": "The Stripe mode does not match the configured key.",
+    "La clave de idempotencia ya se usó con otra solicitud.": "The idempotency key was already used for another request.",
+    "Stripe no está configurado.": "Stripe is not configured.",
+    "No se pudo completar la operación con Stripe. Intenta nuevamente.": "The Stripe operation could not be completed. Please retry.",
+    "El total está fuera del rango permitido para un pago con tarjeta.": "The total is outside the allowed range for card payments.",
+    "La solicitud de pago expiró. Crea un pedido nuevo.": "The payment request expired. Create a new order.",
+    "Los datos del pago no coinciden con el pedido.": "The payment details do not match the order.",
+    "Firma de Stripe inválida.": "Invalid Stripe signature.",
     "El elemento no está disponible para preparación.": "The item is not available for preparation.",
     "La transición de preparación no está permitida.": "The preparation transition is not allowed.",
     "El Chef no tiene una estación de preparación válida.": "The chef does not have a valid preparation station.",

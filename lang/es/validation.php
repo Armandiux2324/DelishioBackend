@@ -54,6 +54,8 @@ return [
         'file' => 'El campo :attribute debe tener :size kilobytes.',
     ],
     'attributes' => [
+        'request_key' => 'clave de idempotencia', 'items' => 'elementos',
+        'items.*.menu_item_id' => 'elemento de menú', 'items.*.quantity' => 'cantidad',
         'status' => 'estado', 'page' => 'página',
         'payments' => 'pagos', 'payments.*.method' => 'método de pago', 'payments.*.amount' => 'importe del pago',
         'tip_amount' => 'propina', 'redeem_points' => 'puntos a canjear', 'qr_code' => 'código QR del cliente',
