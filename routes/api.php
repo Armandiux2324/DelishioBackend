@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\Admin\MenuItemController;
 use App\Http\Controllers\Api\Admin\PaymentTransactionsReportController;
 use App\Http\Controllers\Api\Admin\PromotionController;
 use App\Http\Controllers\Api\Admin\RestaurantConfigurationController;
+use App\Http\Controllers\Api\Admin\SalesSummaryReportController;
 use App\Http\Controllers\Api\Admin\SuperCategoryController;
 use App\Http\Controllers\Api\Admin\TaxClassController;
 use App\Http\Controllers\Api\CashRegisterController;
@@ -81,6 +82,7 @@ Route::prefix('v1')->group(function () {
         ->middleware(['auth:sanctum', 'account.active', 'role:waiter']);
     Route::middleware(['auth:sanctum', 'account.active', 'role:admin'])->prefix('admin')->group(function () {
         Route::get('reports/payment-transactions', PaymentTransactionsReportController::class)->name('admin.reports.payment-transactions');
+        Route::get('reports/sales-summary', SalesSummaryReportController::class)->name('admin.reports.sales-summary');
         Route::apiResource('cash-movements', CashMovementController::class)->only(['index', 'show', 'store']);
         Route::get('customers', [CustomerController::class, 'index']);
         Route::get('customers/{customer}', [CustomerController::class, 'show'])->whereNumber('customer');

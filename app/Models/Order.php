@@ -3,8 +3,10 @@
 namespace App\Models;
 
 use App\Models\Concerns\BelongsToRestaurant;
+use Carbon\CarbonImmutable;
 use Database\Factories\OrderFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -43,6 +45,17 @@ class Order extends Model
             }
         });
         static::deleting(fn () => abort(403));
+    }
+
+    public function scopeClosedSales(Builder $query, CarbonImmutable $from, CarbonImmutable $until): Builder
+    {
+        return $query->where('orders.status', 'closed')
+            ->where('orders.closed_at', '>=', $from)
+            ->where('orders.closed_at', '<', $until)
+            ->where(function (Builder $orders) {
+                $orders->where('orders.source', 'pos')
+                    ->orWhereHas('advancePayment', fn (Builder $payment) => $payment->where('status', 'captured'));
+            });
     }
 
     public function items(): HasMany
