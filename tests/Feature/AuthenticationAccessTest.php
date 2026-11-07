@@ -127,7 +127,7 @@ test('super admin can manage restaurants and create a verified administrator wit
     expect(Hash::isHashed($admin->employee->pin))->toBeTrue();
     expect($admin->employee->toArray())->not->toHaveKey('pin');
     $this->getJson('/api/v1/auth/super-admin/restaurants')->assertOk()->assertJsonCount(1, 'data');
-    $this->patchJson('/api/v1/auth/super-admin/restaurants/'.$id, ['name' => 'Nuevo'])->assertOk()->assertJsonPath('data.name', 'Nuevo');
+    $this->putJson('/api/v1/auth/super-admin/restaurants/'.$id, ['name' => 'Nuevo'])->assertOk()->assertJsonPath('data.name', 'Nuevo');
     $this->postJson('/api/v1/auth/super-admin/restaurants/'.$id.'/suspend')->assertOk()->assertJsonPath('data.status', 'suspended');
     $this->postJson('/api/v1/auth/super-admin/restaurants/'.$id.'/activate')->assertOk()->assertJsonPath('data.status', 'active');
     $this->deleteJson('/api/v1/auth/super-admin/restaurants/'.$id)->assertOk();

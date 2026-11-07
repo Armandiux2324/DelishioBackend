@@ -67,13 +67,13 @@ test('administrators can create read update and soft delete catalog records', fu
     }
     $this->getJson('/api/v1/admin/'.$resource.'/'.$id)->assertOk()->assertJsonPath('data.name', $payload['name']);
     $this->getJson('/api/v1/admin/'.$resource)->assertOk()->assertJsonCount(2, 'data')->assertJsonPath('meta.total', 2);
-    $this->patchJson('/api/v1/admin/'.$resource.'/'.$id, ['name' => 'Editado'])->assertOk()->assertJsonPath('data.name', 'Editado');
+    $this->putJson('/api/v1/admin/'.$resource.'/'.$id, ['name' => 'Editado'])->assertOk()->assertJsonPath('data.name', 'Editado');
     $this->putJson('/api/v1/admin/'.$resource.'/'.$id, ['name' => 'Otro nombre'])->assertOk();
     $this->deleteJson('/api/v1/admin/'.$resource.'/'.$id)->assertNoContent();
     $table = $this->catalogA[$resource]->getTable();
     $this->assertSoftDeleted($table, ['id' => $id]);
     $this->getJson('/api/v1/admin/'.$resource.'/'.$id)->assertNotFound();
-    $this->patchJson('/api/v1/admin/'.$resource.'/'.$id, ['name' => 'No'])->assertNotFound();
+    $this->putJson('/api/v1/admin/'.$resource.'/'.$id, ['name' => 'No'])->assertNotFound();
     $this->getJson('/api/v1/admin/'.$resource)->assertJsonCount(1, 'data');
 })->with(['tax-classes', 'super-categories', 'categories']);
 
@@ -85,7 +85,7 @@ test('catalog lists and bindings isolate restaurants for all operations', functi
     $this->getJson($url.'?restaurant_id='.$this->restaurantB->id)->assertOk()
         ->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $this->catalogA[$resource]->id);
     $this->getJson($url.'/'.$foreign->id)->assertNotFound();
-    $this->patchJson($url.'/'.$foreign->id, ['name' => 'Ataque'])->assertNotFound();
+    $this->putJson($url.'/'.$foreign->id, ['name' => 'Ataque'])->assertNotFound();
     $this->deleteJson($url.'/'.$foreign->id)->assertNotFound();
     $this->assertDatabaseHas($foreign->getTable(), $before);
     $this->actingAs($this->adminB, 'sanctum');
@@ -97,7 +97,7 @@ test('catalog endpoints require authentication', function (string $resource) {
     $this->getJson($url)->assertUnauthorized();
     $this->postJson($url, catalogPayload($resource, $this->catalogA))->assertUnauthorized();
     $this->getJson($url.'/'.$this->catalogA[$resource]->id)->assertUnauthorized();
-    $this->patchJson($url.'/'.$this->catalogA[$resource]->id, ['name' => 'No'])->assertUnauthorized();
+    $this->putJson($url.'/'.$this->catalogA[$resource]->id, ['name' => 'No'])->assertUnauthorized();
     $this->deleteJson($url.'/'.$this->catalogA[$resource]->id)->assertUnauthorized();
 })->with(['tax-classes', 'super-categories', 'categories']);
 
@@ -110,7 +110,7 @@ test('non administrator roles cannot access any catalog operation', function (st
     $this->getJson($url)->assertForbidden();
     $this->postJson($url, catalogPayload($resource, $this->catalogA))->assertForbidden();
     $this->getJson($url.'/'.$this->catalogA[$resource]->id)->assertForbidden();
-    $this->patchJson($url.'/'.$this->catalogA[$resource]->id, ['name' => 'No'])->assertForbidden();
+    $this->putJson($url.'/'.$this->catalogA[$resource]->id, ['name' => 'No'])->assertForbidden();
     $this->deleteJson($url.'/'.$this->catalogA[$resource]->id)->assertForbidden();
 })->with(['tax-classes', 'super-categories', 'categories'])->with(['waiter', 'chef', 'customer', 'super_admin']);
 
@@ -139,7 +139,7 @@ test('catalog validation rejects bad values on both create and update', function
     $before = $model->getAttributes();
     $payload = array_replace(catalogPayload($resource, $this->catalogA), [$field => $value]);
     $this->postJson('/api/v1/admin/'.$resource, $payload)->assertUnprocessable()->assertJsonValidationErrors($field);
-    $this->patchJson('/api/v1/admin/'.$resource.'/'.$model->id, [$field => $value])->assertUnprocessable()->assertJsonValidationErrors($field);
+    $this->putJson('/api/v1/admin/'.$resource.'/'.$model->id, [$field => $value])->assertUnprocessable()->assertJsonValidationErrors($field);
     $this->assertDatabaseHas($model->getTable(), $before);
 })->with([
     ['tax-classes', 'name', null], ['tax-classes', 'name', ''], ['tax-classes', 'name', str_repeat('a', 256)],
@@ -160,7 +160,7 @@ test('cross restaurant parent ids are rejected on create and update', function (
     $before = $this->catalogA[$resource]->getAttributes();
     $payload = array_replace(catalogPayload($resource, $this->catalogA), [$field => $this->catalogB[$parentResource]->id]);
     $this->postJson('/api/v1/admin/'.$resource, $payload)->assertUnprocessable()->assertJsonValidationErrors($field);
-    $this->patchJson('/api/v1/admin/'.$resource.'/'.$this->catalogA[$resource]->id, [$field => $this->catalogB[$parentResource]->id])
+    $this->putJson('/api/v1/admin/'.$resource.'/'.$this->catalogA[$resource]->id, [$field => $this->catalogB[$parentResource]->id])
         ->assertUnprocessable()->assertJsonValidationErrors($field);
     $this->assertDatabaseHas($this->catalogA[$resource]->getTable(), $before);
 })->with([
@@ -177,7 +177,7 @@ test('deleted parents cannot be assigned to catalog records', function (string $
     $this->actingAs($this->adminA, 'sanctum');
     $payload = array_replace(catalogPayload($resource, $this->catalogA), [$field => $parent->id]);
     $this->postJson('/api/v1/admin/'.$resource, $payload)->assertUnprocessable()->assertJsonValidationErrors($field);
-    $this->patchJson('/api/v1/admin/'.$resource.'/'.$this->catalogA[$resource]->id, [$field => $parent->id])
+    $this->putJson('/api/v1/admin/'.$resource.'/'.$this->catalogA[$resource]->id, [$field => $parent->id])
         ->assertUnprocessable()->assertJsonValidationErrors($field);
 })->with([['super-categories', 'tax_class_id'], ['categories', 'super_category_id']]);
 
@@ -200,14 +200,14 @@ test('parents with active children return conflict and can be deleted in child f
 test('category may move only to another active super category of the same restaurant', function () {
     $target = app(RestaurantContext::class)->run($this->restaurantA, fn () => SuperCategory::factory()->create());
     $this->actingAs($this->adminA, 'sanctum');
-    $this->patchJson('/api/v1/admin/categories/'.$this->catalogA['categories']->id, ['super_category_id' => $target->id])
+    $this->putJson('/api/v1/admin/categories/'.$this->catalogA['categories']->id, ['super_category_id' => $target->id])
         ->assertOk()->assertJsonPath('data.super_category_id', $target->id);
 });
 
 test('super category may change to another active tax class of the same restaurant', function () {
     $target = app(RestaurantContext::class)->run($this->restaurantA, fn () => TaxClass::factory()->create());
     $this->actingAs($this->adminA, 'sanctum');
-    $this->patchJson('/api/v1/admin/super-categories/'.$this->catalogA['super-categories']->id, ['tax_class_id' => $target->id])
+    $this->putJson('/api/v1/admin/super-categories/'.$this->catalogA['super-categories']->id, ['tax_class_id' => $target->id])
         ->assertOk()->assertJsonPath('data.tax_class_id', $target->id);
     $this->deleteJson('/api/v1/admin/tax-classes/'.$this->catalogA['tax-classes']->id)->assertNoContent();
 });
@@ -231,7 +231,7 @@ test('indirect scope also protects joins or filters and bulk deletes', function 
 test('catalog validation uses the administrators stored locale', function () {
     $this->adminA->update(['locale' => 'es']);
     $this->actingAs($this->adminA->refresh(), 'sanctum');
-    $this->patchJson('/api/v1/admin/tax-classes/'.$this->catalogA['tax-classes']->id, ['percentage' => -1])
+    $this->putJson('/api/v1/admin/tax-classes/'.$this->catalogA['tax-classes']->id, ['percentage' => -1])
         ->assertUnprocessable()->assertJsonPath('errors.percentage.0', 'El campo porcentaje debe ser al menos 0.');
 });
 
@@ -242,15 +242,15 @@ test('all catalog models fail closed without a restaurant context', function (st
 test('tax precision matches the DBML and permits zero tax', function () {
     $this->actingAs($this->adminA, 'sanctum');
     $id = $this->catalogA['tax-classes']->id;
-    $this->patchJson('/api/v1/admin/tax-classes/'.$id, ['percentage' => 0])->assertOk()->assertJsonPath('data.percentage', '0.00');
-    $this->patchJson('/api/v1/admin/tax-classes/'.$id, ['percentage' => '999.99'])->assertOk()->assertJsonPath('data.percentage', '999.99');
+    $this->putJson('/api/v1/admin/tax-classes/'.$id, ['percentage' => 0])->assertOk()->assertJsonPath('data.percentage', '0.00');
+    $this->putJson('/api/v1/admin/tax-classes/'.$id, ['percentage' => '999.99'])->assertOk()->assertJsonPath('data.percentage', '999.99');
 });
 
 test('category description is optional and can be cleared', function () {
     $this->actingAs($this->adminA, 'sanctum');
     $id = $this->catalogA['categories']->id;
-    $this->patchJson('/api/v1/admin/categories/'.$id, ['description' => 'Texto'])->assertOk();
-    $this->patchJson('/api/v1/admin/categories/'.$id, ['description' => null])->assertOk()->assertJsonPath('data.description', null);
+    $this->putJson('/api/v1/admin/categories/'.$id, ['description' => 'Texto'])->assertOk();
+    $this->putJson('/api/v1/admin/categories/'.$id, ['description' => null])->assertOk()->assertJsonPath('data.description', null);
 });
 
 test('catalog list pagination remains tenant scoped', function (string $resource) {

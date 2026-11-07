@@ -46,15 +46,15 @@ test('administrators manage employee and user records without exposing secrets',
     $url = '/api/v1/admin/employees/'.$id;
     $this->getJson('/api/v1/admin/employees')->assertOk()->assertJsonPath('meta.total', 2)->assertDontSee($employee->pin);
     $this->getJson($url)->assertOk()->assertJsonPath('data.email', 'maria@delishio.com');
-    $this->patchJson($url, ['name' => 'María Chef', 'role' => 'chef', 'station' => 'bar', 'hourly_rate' => '150.25'])
+    $this->putJson($url, ['name' => 'María Chef', 'role' => 'chef', 'station' => 'bar', 'hourly_rate' => '150.25'])
         ->assertOk()->assertJsonPath('data.station', 'bar')->assertJsonPath('data.name', 'María Chef');
     $this->putJson($url, ['role' => 'waiter', 'phone' => null])->assertOk()->assertJsonPath('data.station', null);
-    $this->patchJson($url, ['email' => 'maria@delishio.com', 'username' => 'maria_perez'])->assertOk();
+    $this->putJson($url, ['email' => 'maria@delishio.com', 'username' => 'maria_perez'])->assertOk();
     $this->deleteJson($url)->assertNoContent();
     $this->assertSoftDeleted('users', ['id' => $id]);
     $this->assertDatabaseHas('employees', ['user_id' => $id]);
     $this->getJson($url)->assertNotFound();
-    $this->patchJson($url, ['name' => 'No'])->assertNotFound();
+    $this->putJson($url, ['name' => 'No'])->assertNotFound();
     $this->deleteJson($url)->assertNotFound();
     $this->getJson('/api/v1/admin/employees')->assertJsonPath('meta.total', 1);
 });
@@ -69,7 +69,7 @@ test('automatically generated PIN is returned only once and stored hashed', func
     $employee = Employee::findOrFail($response->json('data.user_id'));
     expect(Hash::check($pin, $employee->pin))->toBeTrue();
     $this->getJson('/api/v1/admin/employees/'.$employee->user_id)->assertOk()->assertJsonMissingPath('meta.generated_pin')->assertJsonMissingPath('data.pin');
-    $this->patchJson('/api/v1/admin/employees/'.$employee->user_id, ['phone' => '123'])->assertOk()->assertJsonMissingPath('meta.generated_pin');
+    $this->putJson('/api/v1/admin/employees/'.$employee->user_id, ['phone' => '123'])->assertOk()->assertJsonMissingPath('meta.generated_pin');
     expect($employee->fresh()->pin)->toBe($employee->pin);
 });
 
@@ -90,7 +90,7 @@ test('employee validation rejects invalid data or server owned fields on create 
     $this->actingAs($this->adminA, 'sanctum');
     $employee = Employee::factory()->create();
     $this->postJson('/api/v1/admin/employees', array_replace($this->payload, [$field => $value]))->assertUnprocessable()->assertJsonValidationErrors($field);
-    $this->patchJson('/api/v1/admin/employees/'.$employee->user_id, [$field => $value])->assertUnprocessable()->assertJsonValidationErrors($field);
+    $this->putJson('/api/v1/admin/employees/'.$employee->user_id, [$field => $value])->assertUnprocessable()->assertJsonValidationErrors($field);
 })->with([
     ['name', ''], ['name', str_repeat('a', 256)], ['email', 'bad'], ['email', 'Upper@delishio.com'],
     ['username', 'Upper'], ['username', 'with space'], ['username', str_repeat('a', 51)], ['locale', 'fr'],
@@ -107,10 +107,10 @@ test('required employee fields and chef station are enforced', function () {
         ->assertUnprocessable()->assertJsonValidationErrors(['name', 'email', 'role', 'hourly_rate', 'password']);
     $this->postJson('/api/v1/admin/employees', array_replace($this->payload, ['role' => 'chef']))->assertUnprocessable()->assertJsonValidationErrors('station');
     $employee = Employee::factory()->create();
-    $this->patchJson('/api/v1/admin/employees/'.$employee->user_id, ['role' => 'chef'])->assertUnprocessable()->assertJsonValidationErrors('station');
-    $this->patchJson('/api/v1/admin/employees/'.$employee->user_id, ['role' => 'chef', 'station' => 'kitchen'])->assertOk();
-    $this->patchJson('/api/v1/admin/employees/'.$employee->user_id, ['phone' => '123'])->assertOk()->assertJsonPath('data.station', 'kitchen');
-    $this->patchJson('/api/v1/admin/employees/'.$employee->user_id, ['station' => null])->assertUnprocessable()->assertJsonValidationErrors('station');
+    $this->putJson('/api/v1/admin/employees/'.$employee->user_id, ['role' => 'chef'])->assertUnprocessable()->assertJsonValidationErrors('station');
+    $this->putJson('/api/v1/admin/employees/'.$employee->user_id, ['role' => 'chef', 'station' => 'kitchen'])->assertOk();
+    $this->putJson('/api/v1/admin/employees/'.$employee->user_id, ['phone' => '123'])->assertOk()->assertJsonPath('data.station', 'kitchen');
+    $this->putJson('/api/v1/admin/employees/'.$employee->user_id, ['station' => null])->assertUnprocessable()->assertJsonValidationErrors('station');
 });
 
 test('email and username remain globally unique including deleted users', function () {
@@ -129,10 +129,10 @@ test('employee endpoints isolate restaurants and cannot reassign user identities
     $url = '/api/v1/admin/employees';
     $this->getJson($url.'?restaurant_id='.$this->restaurantB->id)->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.user_id', $this->adminA->id);
     $this->getJson($url.'/'.$this->adminB->id)->assertNotFound();
-    $this->patchJson($url.'/'.$this->adminB->id, ['password' => 'Compromised123!', 'password_confirmation' => 'Compromised123!'])->assertNotFound();
+    $this->putJson($url.'/'.$this->adminB->id, ['password' => 'Compromised123!', 'password_confirmation' => 'Compromised123!'])->assertNotFound();
     $this->deleteJson($url.'/'.$this->adminB->id)->assertNotFound();
     $this->postJson($url, $this->payload + ['restaurant_id' => $this->restaurantB->id])->assertUnprocessable()->assertJsonValidationErrors('restaurant_id');
-    $this->patchJson($url.'/'.$this->adminA->id, ['user_id' => $this->adminB->id])->assertUnprocessable()->assertJsonValidationErrors('user_id');
+    $this->putJson($url.'/'.$this->adminA->id, ['user_id' => $this->adminB->id])->assertUnprocessable()->assertJsonValidationErrors('user_id');
     expect(Hash::check('password', $this->adminB->fresh()->password))->toBeTrue();
     $this->actingAs($this->adminB, 'sanctum')->getJson($url)->assertJsonCount(1, 'data')->assertJsonPath('data.0.user_id', $this->adminB->id);
 });
@@ -145,10 +145,10 @@ test('the last active admin cannot be removed demoted or deactivated', function 
     $invalidAdmin->user->update(['user_type' => 'customer']);
     $url = '/api/v1/admin/employees/'.$this->adminA->id;
     $this->deleteJson($url)->assertConflict();
-    $this->patchJson($url, ['role' => 'waiter'])->assertConflict();
-    $this->patchJson($url, ['active' => false])->assertConflict();
+    $this->putJson($url, ['role' => 'waiter'])->assertConflict();
+    $this->putJson($url, ['active' => false])->assertConflict();
     $other = Employee::factory()->create(['role' => 'admin']);
-    $this->patchJson('/api/v1/admin/employees/'.$other->user_id, ['role' => 'waiter'])->assertOk();
+    $this->putJson('/api/v1/admin/employees/'.$other->user_id, ['role' => 'waiter'])->assertOk();
     $replacement = Employee::factory()->create(['role' => 'admin']);
     $this->deleteJson($url)->assertNoContent();
     $this->assertDatabaseHas('employees', ['user_id' => $replacement->user_id, 'role' => 'admin']);
@@ -160,7 +160,7 @@ test('credential or privilege changes revoke sessions and pending OTPs', functio
     $user = $employee->user;
     $user->createToken('old');
     $code = VerificationCode::generate($user->id, 'login_2fa');
-    $this->patchJson('/api/v1/admin/employees/'.$employee->user_id, $change)->assertOk();
+    $this->putJson('/api/v1/admin/employees/'.$employee->user_id, $change)->assertOk();
     expect($user->tokens()->count())->toBe(0);
     expect($code->fresh()->used)->toBeTrue();
 })->with([
@@ -173,7 +173,7 @@ test('editing phone and rate preserves credentials and sessions', function () {
     $this->actingAs($this->adminA, 'sanctum');
     $employee = Employee::factory()->create();
     $employee->user->createToken('keep');
-    $this->patchJson('/api/v1/admin/employees/'.$employee->user_id, ['phone' => '123', 'hourly_rate' => '999999.99'])
+    $this->putJson('/api/v1/admin/employees/'.$employee->user_id, ['phone' => '123', 'hourly_rate' => '999999.99'])
         ->assertOk()->assertJsonPath('data.hourly_rate', '999999.99');
     expect($employee->user->tokens()->count())->toBe(1);
 });
@@ -213,7 +213,7 @@ test('employee update failure rolls back both tables', function () {
     Employee::setEventDispatcher(clone $dispatcher);
     Employee::updating(fn () => throw new RuntimeException('Employee update failed'));
     try {
-        $this->patchJson('/api/v1/admin/employees/'.$employee->user_id, ['name' => 'No guardar', 'hourly_rate' => '50'])->assertServerError();
+        $this->putJson('/api/v1/admin/employees/'.$employee->user_id, ['name' => 'No guardar', 'hourly_rate' => '50'])->assertServerError();
     } finally {
         Employee::setEventDispatcher($dispatcher);
     }
@@ -233,7 +233,7 @@ test('employee endpoints refuse guests and all non admin roles', function (strin
     $this->getJson($url)->assertStatus($status);
     $this->postJson($url, $this->payload)->assertStatus($status);
     $this->getJson($url.'/'.$this->adminA->id)->assertStatus($status);
-    $this->patchJson($url.'/'.$this->adminA->id, ['phone' => '123'])->assertStatus($status);
+    $this->putJson($url.'/'.$this->adminA->id, ['phone' => '123'])->assertStatus($status);
     $this->deleteJson($url.'/'.$this->adminA->id)->assertStatus($status);
 })->with(['guest', 'waiter', 'chef', 'customer', 'super_admin']);
 
@@ -256,7 +256,7 @@ test('updated passwords PINs and revoked tokens take effect in authentication', 
     $employee = Employee::factory()->create(['role' => 'admin']);
     $user = $employee->user;
     $token = $user->createToken('old')->plainTextToken;
-    $this->patchJson('/api/v1/admin/employees/'.$employee->user_id, [
+    $this->putJson('/api/v1/admin/employees/'.$employee->user_id, [
         'password' => 'NewPassword123!', 'password_confirmation' => 'NewPassword123!', 'pin' => '0000',
     ])->assertOk();
     $service = app(AdminPinAuthorization::class);
@@ -281,7 +281,7 @@ test('chef station is rechecked against locked data when the bound employee beco
         }
     });
     try {
-        $this->patchJson('/api/v1/admin/employees/'.$employee->user_id, ['role' => 'chef'])
+        $this->putJson('/api/v1/admin/employees/'.$employee->user_id, ['role' => 'chef'])
             ->assertUnprocessable()->assertJsonValidationErrors('station');
     } finally {
         Employee::setEventDispatcher($dispatcher);

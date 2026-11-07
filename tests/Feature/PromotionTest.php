@@ -52,17 +52,17 @@ test('administrators manage promotions with exact values and target associations
     $url = '/api/v1/admin/promotions/'.$id;
     $this->getJson($url)->assertOk();
     $this->getJson('/api/v1/admin/promotions')->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('meta.total', 1);
-    $this->patchJson($url, ['name' => 'Editada', 'menu_item_ids' => [$this->menuA2->id], 'category_ids' => [$this->categoryA2->id]])
+    $this->putJson($url, ['name' => 'Editada', 'menu_item_ids' => [$this->menuA2->id], 'category_ids' => [$this->categoryA2->id]])
         ->assertOk()->assertJsonPath('data.name', 'Editada')->assertJsonPath('data.menu_item_ids', [$this->menuA2->id]);
     $this->assertDatabaseMissing('promotion_menu_items', ['promotion_id' => $id, 'menu_item_id' => $this->menuA->id]);
     $this->assertDatabaseHas('promotion_categories', ['promotion_id' => $id, 'category_id' => $this->categoryA2->id]);
     $this->putJson($url, ['active' => false])->assertOk()->assertJsonPath('data.active', false)->assertJsonPath('data.category_ids', [$this->categoryA2->id]);
-    $this->patchJson($url, ['menu_item_ids' => [], 'category_ids' => [], 'days_of_week' => null, 'time_start' => null, 'time_end' => null])
+    $this->putJson($url, ['menu_item_ids' => [], 'category_ids' => [], 'days_of_week' => null, 'time_start' => null, 'time_end' => null])
         ->assertOk()->assertJsonCount(0, 'data.menu_item_ids')->assertJsonCount(0, 'data.category_ids')->assertJsonPath('data.days_of_week', null);
     $this->deleteJson($url)->assertNoContent();
     $this->assertSoftDeleted('promotions', ['id' => $id]);
     $this->getJson($url)->assertNotFound();
-    $this->patchJson($url, ['name' => 'No'])->assertNotFound();
+    $this->putJson($url, ['name' => 'No'])->assertNotFound();
     $this->getJson('/api/v1/admin/promotions')->assertJsonCount(0, 'data');
 });
 
@@ -93,7 +93,7 @@ test('mandatory promotion fields are enforced', function () {
 test('promotion validation rejects invalid scalar values and server identifiers', function (string $field, mixed $value) {
     $promotion = Promotion::factory()->create();
     $this->postJson('/api/v1/admin/promotions', array_replace($this->payload, [$field => $value]))->assertUnprocessable()->assertJsonValidationErrors($field);
-    $this->patchJson('/api/v1/admin/promotions/'.$promotion->id, [$field => $value])->assertUnprocessable()->assertJsonValidationErrors($field);
+    $this->putJson('/api/v1/admin/promotions/'.$promotion->id, [$field => $value])->assertUnprocessable()->assertJsonValidationErrors($field);
 })->with([
     ['name', ''], ['name', str_repeat('a', 256)], ['condition_type', 'other'], ['condition_type', null],
     ['condition_value', '0'], ['condition_value', '-1'], ['condition_value', '1.001'], ['condition_value', '100000000'],
@@ -119,15 +119,15 @@ test('numeric precision and condition specific limits are validated', function (
 test('partial edits validate the final discount condition dates and time window', function () {
     $id = $this->postJson('/api/v1/admin/promotions', $this->payload)->assertCreated()->json('data.id');
     $url = '/api/v1/admin/promotions/'.$id;
-    $this->patchJson($url, ['valid_from' => '2027-01-01'])->assertUnprocessable()->assertJsonValidationErrors('valid_to');
-    $this->patchJson($url, ['time_end' => null])->assertUnprocessable()->assertJsonValidationErrors('time_end');
-    $this->patchJson($url, ['time_start' => '20:30'])->assertUnprocessable()->assertJsonValidationErrors('time_end');
-    $this->patchJson($url, ['discount_type' => 'fixed_amount', 'discount_value' => '500'])->assertOk();
-    $this->patchJson($url, ['discount_type' => 'percentage'])->assertUnprocessable()->assertJsonValidationErrors('discount_value');
-    $this->patchJson($url, ['condition_type' => 'category_discount'])->assertOk()->assertJsonPath('data.condition_value', null);
-    $this->patchJson($url, ['category_ids' => []])->assertUnprocessable()->assertJsonValidationErrors('category_ids');
-    $this->patchJson($url, ['condition_type' => 'product_quantity'])->assertUnprocessable()->assertJsonValidationErrors('condition_value');
-    $this->patchJson($url, ['condition_type' => 'product_quantity', 'condition_value' => '2'])->assertOk();
+    $this->putJson($url, ['valid_from' => '2027-01-01'])->assertUnprocessable()->assertJsonValidationErrors('valid_to');
+    $this->putJson($url, ['time_end' => null])->assertUnprocessable()->assertJsonValidationErrors('time_end');
+    $this->putJson($url, ['time_start' => '20:30'])->assertUnprocessable()->assertJsonValidationErrors('time_end');
+    $this->putJson($url, ['discount_type' => 'fixed_amount', 'discount_value' => '500'])->assertOk();
+    $this->putJson($url, ['discount_type' => 'percentage'])->assertUnprocessable()->assertJsonValidationErrors('discount_value');
+    $this->putJson($url, ['condition_type' => 'category_discount'])->assertOk()->assertJsonPath('data.condition_value', null);
+    $this->putJson($url, ['category_ids' => []])->assertUnprocessable()->assertJsonValidationErrors('category_ids');
+    $this->putJson($url, ['condition_type' => 'product_quantity'])->assertUnprocessable()->assertJsonValidationErrors('condition_value');
+    $this->putJson($url, ['condition_type' => 'product_quantity', 'condition_value' => '2'])->assertOk();
 });
 
 test('promotion bindings and lists isolate restaurants for every operation', function () {
@@ -135,7 +135,7 @@ test('promotion bindings and lists isolate restaurants for every operation', fun
     $url = '/api/v1/admin/promotions';
     $this->getJson($url.'?restaurant_id='.$this->restaurantB->id)->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $id);
     $this->getJson($url.'/'.$this->promotionB->id)->assertNotFound();
-    $this->patchJson($url.'/'.$this->promotionB->id, ['name' => 'Ataque', 'menu_item_ids' => []])->assertNotFound();
+    $this->putJson($url.'/'.$this->promotionB->id, ['name' => 'Ataque', 'menu_item_ids' => []])->assertNotFound();
     $this->deleteJson($url.'/'.$this->promotionB->id)->assertNotFound();
     $this->actingAs($this->adminB, 'sanctum')->getJson($url)->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $this->promotionB->id);
 });
@@ -162,7 +162,7 @@ test('target attachment failures roll back promotion and all links on create and
     PromotionCategory::creating(fn () => throw new RuntimeException('Target attach failed'));
     try {
         if ($promotion) {
-            $this->patchJson('/api/v1/admin/promotions/'.$promotion->id, [
+            $this->putJson('/api/v1/admin/promotions/'.$promotion->id, [
                 'name' => 'No guardar', 'menu_item_ids' => [$this->menuA2->id], 'category_ids' => [$this->categoryA2->id],
             ])->assertServerError();
         } else {
@@ -186,7 +186,7 @@ test('catalog targets cannot be deleted until their promotion is removed', funct
     $id = $this->postJson('/api/v1/admin/promotions', array_replace($this->payload, ['category_ids' => [$this->categoryA2->id]]))->assertCreated()->json('data.id');
     $this->deleteJson('/api/v1/admin/menu-items/'.$this->menuA->id)->assertConflict();
     $this->deleteJson('/api/v1/admin/categories/'.$this->categoryA2->id)->assertConflict();
-    $this->patchJson('/api/v1/admin/promotions/'.$id, ['active' => false])->assertOk();
+    $this->putJson('/api/v1/admin/promotions/'.$id, ['active' => false])->assertOk();
     $this->deleteJson('/api/v1/admin/menu-items/'.$this->menuA->id)->assertConflict();
     $this->deleteJson('/api/v1/admin/promotions/'.$id)->assertNoContent();
     $this->deleteJson('/api/v1/admin/menu-items/'.$this->menuA->id)->assertNoContent();
@@ -225,7 +225,7 @@ test('effective discount state is rechecked after acquiring the row lock', funct
         }
     });
     try {
-        $this->patchJson('/api/v1/admin/promotions/'.$promotion->id, ['discount_type' => 'percentage'])
+        $this->putJson('/api/v1/admin/promotions/'.$promotion->id, ['discount_type' => 'percentage'])
             ->assertUnprocessable()->assertJsonValidationErrors('discount_value');
     } finally {
         Promotion::setEventDispatcher($dispatcher);
@@ -248,7 +248,7 @@ test('promotion operations require authentication and administrator role', funct
     $this->getJson($url)->assertStatus($status);
     $this->postJson($url, $this->payload)->assertStatus($status);
     $this->getJson($url.'/'.$promotion->id)->assertStatus($status);
-    $this->patchJson($url.'/'.$promotion->id, ['name' => 'No'])->assertStatus($status);
+    $this->putJson($url.'/'.$promotion->id, ['name' => 'No'])->assertStatus($status);
     $this->deleteJson($url.'/'.$promotion->id)->assertStatus($status);
 })->with(['guest', 'waiter', 'chef', 'customer', 'super_admin']);
 
