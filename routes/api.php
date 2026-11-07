@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\Admin\CashMovementController;
 use App\Http\Controllers\Api\Admin\CategoryController;
 use App\Http\Controllers\Api\Admin\CustomerController;
+use App\Http\Controllers\Api\Admin\DashboardController;
 use App\Http\Controllers\Api\Admin\EmployeeController;
 use App\Http\Controllers\Api\Admin\InventoryItemController;
 use App\Http\Controllers\Api\Admin\InventoryLossController;
@@ -81,6 +82,7 @@ Route::prefix('v1')->group(function () {
     Route::post('cash-registers/{cash_register}/close', [CashRegisterController::class, 'close'])
         ->middleware(['auth:sanctum', 'account.active', 'role:waiter']);
     Route::middleware(['auth:sanctum', 'account.active', 'role:admin'])->prefix('admin')->group(function () {
+        Route::get('dashboard', DashboardController::class)->name('admin.dashboard');
         Route::get('reports/payment-transactions', PaymentTransactionsReportController::class)->name('admin.reports.payment-transactions');
         Route::get('reports/sales-summary', SalesSummaryReportController::class)->name('admin.reports.sales-summary');
         Route::apiResource('cash-movements', CashMovementController::class)->only(['index', 'show', 'store']);

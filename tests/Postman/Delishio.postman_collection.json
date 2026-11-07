@@ -7389,6 +7389,46 @@
       "description": "Ajusta from y to para consultar el rango deseado.",
       "item": [
         {
+          "name": "Dashboard del Administrador RFA-001",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/admin/dashboard?period=today",
+            "description": "Usa period=today, yesterday o week. Para fechas específicas, sustituye period por from y to en formato YYYY-MM-DD.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP esperado 200', () => pm.expect([200]).to.include(pm.response.code));",
+                  "let j; try { j = pm.response.json(); } catch(e) { pm.test('Respuesta JSON', () => { throw e; }); }",
+                  "if (j && pm.response.code >= 200 && pm.response.code < 300) {",
+                  "",
+                  "}",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Transacciones por tipo de pago RFA-033",
           "request": {
             "method": "GET",
