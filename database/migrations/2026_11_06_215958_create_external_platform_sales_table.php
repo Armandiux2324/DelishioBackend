@@ -16,7 +16,7 @@ return new class extends Migration
             $table->decimal('commission_amount', 10, 2);
             $table->decimal('net_amount', 10, 2);
             $table->foreignId('registered_by_employee_id')->constrained('employees', 'user_id');
-            $table->timestamp('sale_date');
+            $table->timestamp('sale_date')->useCurrent();
             $table->index(['restaurant_id', 'sale_date', 'id']);
         });
         Schema::create('external_platform_sale_items', function (Blueprint $table) {

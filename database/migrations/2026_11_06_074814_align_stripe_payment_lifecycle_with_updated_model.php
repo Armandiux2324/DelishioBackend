@@ -40,7 +40,7 @@ return new class extends Migration
         Schema::table('advance_order_payments', function (Blueprint $table) {
             $table->dropIndex(['refund_pending']);
             $table->dropColumn(['payment_confirmed', 'refund_pending']);
-            $table->timestamp('updated_at')->nullable(false)->change();
+            $table->timestamp('updated_at')->useCurrent()->change();
         });
     }
 

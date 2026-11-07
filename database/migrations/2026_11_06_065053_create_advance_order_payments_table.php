@@ -23,7 +23,7 @@ return new class extends Migration
             $table->boolean('refund_pending')->default(false)->index();
             $table->string('refund_reference')->nullable();
             $table->timestamp('refunded_at')->nullable();
-            $table->timestamp('created_at');
+            $table->timestamp('created_at')->useCurrent();
         });
     }
 
