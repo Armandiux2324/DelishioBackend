@@ -54,7 +54,7 @@ test('administrators create consult update and soft delete menu items with recip
     $url = '/api/v1/admin/menu-items/'.$id;
     $this->getJson($url)->assertOk()->assertJsonPath('data.name', 'Margarita');
     $this->getJson('/api/v1/admin/menu-items')->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('meta.total', 1);
-    $this->patchJson($url, ['name' => 'Margarita especial', 'ingredients' => [
+    $this->putJson($url, ['name' => 'Margarita especial', 'ingredients' => [
         ['inventory_item_id' => $this->ingredientA2->id, 'quantity' => '1.001'],
     ]])->assertOk()->assertJsonPath('data.ingredients.0.inventory_item_id', $this->ingredientA2->id);
     $this->assertDatabaseMissing('menu_item_ingredients', ['menu_item_id' => $id, 'inventory_item_id' => $this->ingredientA->id]);
@@ -94,7 +94,7 @@ test('menu validation rejects invalid scalar values and forged identifiers', fun
     $this->actingAs($this->adminA, 'sanctum');
     $item = MenuItem::factory()->create(['category_id' => $this->categoryA->id]);
     $this->postJson('/api/v1/admin/menu-items', array_replace($this->payload, [$field => $value]))->assertUnprocessable()->assertJsonValidationErrors($field);
-    $this->patchJson('/api/v1/admin/menu-items/'.$item->id, [$field => $value])->assertUnprocessable()->assertJsonValidationErrors($field);
+    $this->putJson('/api/v1/admin/menu-items/'.$item->id, [$field => $value])->assertUnprocessable()->assertJsonValidationErrors($field);
     expect($item->fresh()->sale_price)->toBe('12.50');
 })->with([
     ['name', ''], ['name', str_repeat('a', 256)], ['sale_price', '-0.01'], ['sale_price', '100000000'],
@@ -139,11 +139,11 @@ test('menu routes and recipe references isolate restaurants', function () {
     $url = '/api/v1/admin/menu-items';
     $this->getJson($url.'?restaurant_id='.$this->restaurantB->id)->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $own);
     $this->getJson($url.'/'.$foreign->id)->assertNotFound();
-    $this->patchJson($url.'/'.$foreign->id, ['name' => 'Ataque', 'ingredients' => []])->assertNotFound();
+    $this->putJson($url.'/'.$foreign->id, ['name' => 'Ataque', 'ingredients' => []])->assertNotFound();
     $this->deleteJson($url.'/'.$foreign->id)->assertNotFound();
     $this->postJson($url, array_replace($this->payload, ['category_id' => $this->categoryB->id]))->assertUnprocessable()->assertJsonValidationErrors('category_id');
-    $this->patchJson($url.'/'.$own, ['category_id' => $this->categoryB->id])->assertUnprocessable()->assertJsonValidationErrors('category_id');
-    $this->patchJson($url.'/'.$own, ['ingredients' => [['inventory_item_id' => $this->ingredientB->id, 'quantity' => '1']]])
+    $this->putJson($url.'/'.$own, ['category_id' => $this->categoryB->id])->assertUnprocessable()->assertJsonValidationErrors('category_id');
+    $this->putJson($url.'/'.$own, ['ingredients' => [['inventory_item_id' => $this->ingredientB->id, 'quantity' => '1']]])
         ->assertUnprocessable()->assertJsonValidationErrors('ingredients.0.inventory_item_id');
     $this->assertDatabaseHas('menu_items', ['id' => $foreign->id, 'name' => 'Privado B', 'deleted_at' => null]);
     expect(MenuAuditLog::where('menu_item_id', $foreign->id)->count())->toBe(0);
@@ -164,12 +164,12 @@ test('recipe replacement updates quantities removes ingredients and preserves om
     $this->actingAs($this->adminA, 'sanctum');
     $id = $this->postJson('/api/v1/admin/menu-items', $this->payload)->assertCreated()->json('data.id');
     $url = '/api/v1/admin/menu-items/'.$id;
-    $this->patchJson($url, ['ingredients' => [
+    $this->putJson($url, ['ingredients' => [
         ['inventory_item_id' => $this->ingredientA->id, 'quantity' => '0.001'],
         ['inventory_item_id' => $this->ingredientA2->id, 'quantity' => '2'],
     ]])->assertOk()->assertJsonCount(2, 'data.ingredients')->assertJsonPath('data.ingredients.0.quantity', '0.001');
-    $this->patchJson($url, ['name' => 'Otro'])->assertOk()->assertJsonCount(2, 'data.ingredients');
-    $this->patchJson($url, ['ingredients' => []])->assertOk()->assertJsonCount(0, 'data.ingredients');
+    $this->putJson($url, ['name' => 'Otro'])->assertOk()->assertJsonCount(2, 'data.ingredients');
+    $this->putJson($url, ['ingredients' => []])->assertOk()->assertJsonCount(0, 'data.ingredients');
     expect(MenuItemIngredient::count())->toBe(0);
     $quantityLog = MenuAuditLog::where('menu_item_id', $id)->where('action', 'edit')->get()
         ->first(fn ($log) => ($value = json_decode($log->new_value ?? 'null', true)) && ($value['ingredients']['quantity'] ?? null) === '0.001');
@@ -181,10 +181,10 @@ test('observers audit each action with previous values and actual employee', fun
     $this->actingAs($this->adminA, 'sanctum');
     $id = $this->postJson('/api/v1/admin/menu-items', $this->payload)->assertCreated()->json('data.id');
     $url = '/api/v1/admin/menu-items/'.$id;
-    $this->patchJson($url, ['sale_price' => '150.00', 'name' => 'Nuevo nombre', 'active' => false])->assertOk();
-    $this->patchJson($url, ['active' => true])->assertOk();
+    $this->putJson($url, ['sale_price' => '150.00', 'name' => 'Nuevo nombre', 'active' => false])->assertOk();
+    $this->putJson($url, ['active' => true])->assertOk();
     $before = MenuAuditLog::count();
-    $this->patchJson($url, ['active' => true, 'sale_price' => '150.00', 'ingredients' => $this->payload['ingredients']])->assertOk();
+    $this->putJson($url, ['active' => true, 'sale_price' => '150.00', 'ingredients' => $this->payload['ingredients']])->assertOk();
     expect(MenuAuditLog::count())->toBe($before);
     $this->deleteJson($url)->assertNoContent();
     $logs = MenuAuditLog::where('menu_item_id', $id)->get();
@@ -203,7 +203,7 @@ test('catalog and inventory protect recipe relationships and audit history survi
     $id = $this->postJson('/api/v1/admin/menu-items', $this->payload)->assertCreated()->json('data.id');
     $this->deleteJson('/api/v1/admin/categories/'.$this->categoryA->id)->assertConflict();
     $this->deleteJson('/api/v1/admin/inventory-items/'.$this->ingredientA->id)->assertConflict();
-    $this->patchJson('/api/v1/admin/inventory-items/'.$this->ingredientA->id, ['unit' => 'g'])->assertConflict();
+    $this->putJson('/api/v1/admin/inventory-items/'.$this->ingredientA->id, ['unit' => 'g'])->assertConflict();
     $super = $this->categoryA->superCategory;
     $this->deleteJson('/api/v1/admin/menu-items/'.$id)->assertNoContent();
     $this->deleteJson('/api/v1/admin/categories/'.$this->categoryA->id)->assertNoContent();
@@ -225,7 +225,7 @@ test('audit failure rolls back menu metadata recipe and previous audit writes', 
         }
     });
     try {
-        $this->patchJson('/api/v1/admin/menu-items/'.$id, ['name' => 'No guardar', 'ingredients' => [
+        $this->putJson('/api/v1/admin/menu-items/'.$id, ['name' => 'No guardar', 'ingredients' => [
             ['inventory_item_id' => $this->ingredientA->id, 'quantity' => '1'],
         ]])->assertServerError();
     } finally {
@@ -246,7 +246,7 @@ test('audit text capacity is validated before committing data', function () {
 test('combined edits cannot create a snapshot too large to audit on deletion', function () {
     $this->actingAs($this->adminA, 'sanctum');
     $id = $this->postJson('/api/v1/admin/menu-items', $this->payload)->assertCreated()->json('data.id');
-    $this->patchJson('/api/v1/admin/menu-items/'.$id, [
+    $this->putJson('/api/v1/admin/menu-items/'.$id, [
         'description' => str_repeat('x', 65400), 'name' => str_repeat('x', 255),
     ])->assertUnprocessable()->assertJsonValidationErrors('description');
     $this->assertDatabaseHas('menu_items', ['id' => $id, 'name' => 'Margarita', 'description' => 'Con limón']);
@@ -267,7 +267,7 @@ test('menu operations require authentication and admin role', function (string $
     $this->getJson($url)->assertStatus($status);
     $this->postJson($url, $this->payload)->assertStatus($status);
     $this->getJson($url.'/'.$item->id)->assertStatus($status);
-    $this->patchJson($url.'/'.$item->id, ['name' => 'No'])->assertStatus($status);
+    $this->putJson($url.'/'.$item->id, ['name' => 'No'])->assertStatus($status);
     $this->deleteJson($url.'/'.$item->id)->assertStatus($status);
 })->with(['guest', 'waiter', 'chef', 'customer', 'super_admin']);
 

@@ -86,14 +86,21 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('cash-movements', CashMovementController::class)->only(['index', 'show', 'store']);
         Route::get('customers', [CustomerController::class, 'index']);
         Route::get('customers/{customer}', [CustomerController::class, 'show'])->whereNumber('customer');
-        Route::apiResource('promotions', PromotionController::class);
-        Route::apiResource('employees', EmployeeController::class);
-        Route::apiResource('menu-items', MenuItemController::class);
-        Route::apiResource('inventory-items', InventoryItemController::class);
+        Route::apiResource('promotions', PromotionController::class)->except(['update']);
+        Route::put('promotions/{promotion}', [PromotionController::class, 'update'])->name('promotions.update');
+        Route::apiResource('employees', EmployeeController::class)->except(['update']);
+        Route::put('employees/{employee}', [EmployeeController::class, 'update'])->name('employees.update');
+        Route::apiResource('menu-items', MenuItemController::class)->except(['update']);
+        Route::put('menu-items/{menu_item}', [MenuItemController::class, 'update'])->name('menu-items.update');
+        Route::apiResource('inventory-items', InventoryItemController::class)->except(['update']);
+        Route::put('inventory-items/{inventory_item}', [InventoryItemController::class, 'update'])->name('inventory-items.update');
         Route::apiResource('inventory-losses', InventoryLossController::class)->only(['index', 'show', 'store']);
-        Route::apiResource('tax-classes', TaxClassController::class);
-        Route::apiResource('super-categories', SuperCategoryController::class);
-        Route::apiResource('categories', CategoryController::class);
+        Route::apiResource('tax-classes', TaxClassController::class)->except(['update']);
+        Route::put('tax-classes/{tax_class}', [TaxClassController::class, 'update'])->name('tax-classes.update');
+        Route::apiResource('super-categories', SuperCategoryController::class)->except(['update']);
+        Route::put('super-categories/{super_category}', [SuperCategoryController::class, 'update'])->name('super-categories.update');
+        Route::apiResource('categories', CategoryController::class)->except(['update']);
+        Route::put('categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
         Route::get('/restaurant/configuration', [RestaurantConfigurationController::class, 'show']);
         Route::patch('/restaurant/configuration', [RestaurantConfigurationController::class, 'update']);
     });
@@ -120,7 +127,8 @@ Route::prefix('v1')->group(function () {
         });
 
         Route::middleware(['auth:sanctum', 'account.active', 'role:super_admin'])->prefix('super-admin')->group(function () {
-            Route::apiResource('restaurants', RestaurantController::class)->except(['destroy'])->middleware('throttle:30,1');
+            Route::apiResource('restaurants', RestaurantController::class)->except(['update', 'destroy'])->middleware('throttle:30,1');
+            Route::put('restaurants/{restaurant}', [RestaurantController::class, 'update'])->name('restaurants.update')->middleware('throttle:30,1');
             Route::delete('/restaurants/{restaurant}', [RestaurantController::class, 'destroy'])->middleware('throttle:10,1');
             Route::post('/restaurants/{restaurant}/activate', [RestaurantController::class, 'activate']);
             Route::post('/restaurants/{restaurant}/suspend', [RestaurantController::class, 'suspend']);

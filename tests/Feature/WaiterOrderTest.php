@@ -343,7 +343,7 @@ test('consumption history remains scoped and fixes ingredient units after a reci
     expect(fn () => $movement->delete())->toThrow(HttpException::class);
     $this->actingAs($this->adminA, 'sanctum');
     $this->menuA->ingredients()->firstOrFail()->delete();
-    $this->patchJson('/api/v1/admin/inventory-items/'.$this->ingredientA->id, ['unit' => 'g'])->assertConflict();
+    $this->putJson('/api/v1/admin/inventory-items/'.$this->ingredientA->id, ['unit' => 'g'])->assertConflict();
     $this->menuA2->ingredients()->where('inventory_item_id', $this->ingredientA->id)->firstOrFail()->delete();
     $this->ingredientA->delete();
     expect(InventoryMovement::count())->toBe(1);

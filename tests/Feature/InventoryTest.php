@@ -42,7 +42,7 @@ test('administrators manage ingredients and absolute stock', function () {
     $url = '/api/v1/admin/inventory-items/'.$response->json('data.id');
     $this->getJson($url)->assertOk()->assertJsonPath('data.name', 'Harina');
     $this->putJson($url, ['current_stock' => '0.001'])->assertOk()->assertJsonPath('data.current_stock', '0.001');
-    $this->patchJson($url, ['unit' => 'g', 'unit_cost' => '0'])->assertOk()->assertJsonPath('data.unit_cost', '0.0000');
+    $this->putJson($url, ['unit' => 'g', 'unit_cost' => '0'])->assertOk()->assertJsonPath('data.unit_cost', '0.0000');
     $this->getJson('/api/v1/admin/inventory-items')->assertOk()->assertJsonPath('meta.total', 2);
     $this->deleteJson($url)->assertNoContent();
     $this->assertSoftDeleted('inventory_items', ['id' => $response->json('data.id')]);
@@ -56,7 +56,7 @@ test('DBML units are supported', function (string $unit) {
 test('ingredient validation enforces bounds precision and owned fields', function (string $field, mixed $value) {
     $this->actingAs($this->adminA, 'sanctum');
     $this->postJson('/api/v1/admin/inventory-items', array_replace($this->payload, [$field => $value]))->assertUnprocessable()->assertJsonValidationErrors($field);
-    $this->patchJson('/api/v1/admin/inventory-items/'.$this->itemA->id, [$field => $value])->assertUnprocessable()->assertJsonValidationErrors($field);
+    $this->putJson('/api/v1/admin/inventory-items/'.$this->itemA->id, [$field => $value])->assertUnprocessable()->assertJsonValidationErrors($field);
 })->with([
     ['name', ''], ['name', str_repeat('a', 256)], ['unit', 'litros'], ['unit', null],
     ['unit_cost', '-0.0001'], ['unit_cost', '1000000'], ['unit_cost', '1.12345'],
@@ -73,7 +73,7 @@ test('ingredient operations isolate restaurants', function () {
     $url = '/api/v1/admin/inventory-items';
     $this->getJson($url.'?restaurant_id='.$this->restaurantB->id)->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $this->itemA->id);
     $this->getJson($url.'/'.$this->itemB->id)->assertNotFound();
-    $this->patchJson($url.'/'.$this->itemB->id, ['current_stock' => '0'])->assertNotFound();
+    $this->putJson($url.'/'.$this->itemB->id, ['current_stock' => '0'])->assertNotFound();
     $this->deleteJson($url.'/'.$this->itemB->id)->assertNotFound();
     $this->assertDatabaseHas('inventory_items', ['id' => $this->itemB->id, 'current_stock' => 10, 'deleted_at' => null]);
 });
@@ -135,8 +135,8 @@ test('units cannot change after losses but metadata can', function () {
     $this->actingAs($this->adminA, 'sanctum');
     $this->postJson('/api/v1/admin/inventory-losses', $this->loss)->assertCreated();
     $url = '/api/v1/admin/inventory-items/'.$this->itemA->id;
-    $this->patchJson($url, ['unit' => 'g'])->assertConflict();
-    $this->patchJson($url, ['unit' => 'kg', 'name' => 'Nuevo nombre', 'unit_cost' => '99.9999'])->assertOk();
+    $this->putJson($url, ['unit' => 'g'])->assertConflict();
+    $this->putJson($url, ['unit' => 'kg', 'name' => 'Nuevo nombre', 'unit_cost' => '99.9999'])->assertOk();
 });
 
 test('inventory requires authentication and administrator role', function (string $role) {
@@ -151,7 +151,7 @@ test('inventory requires authentication and administrator role', function (strin
     $this->getJson('/api/v1/admin/inventory-items')->assertStatus($status);
     $this->postJson('/api/v1/admin/inventory-items', $this->payload)->assertStatus($status);
     $this->getJson('/api/v1/admin/inventory-items/'.$this->itemA->id)->assertStatus($status);
-    $this->patchJson('/api/v1/admin/inventory-items/'.$this->itemA->id, ['current_stock' => '0'])->assertStatus($status);
+    $this->putJson('/api/v1/admin/inventory-items/'.$this->itemA->id, ['current_stock' => '0'])->assertStatus($status);
     $this->deleteJson('/api/v1/admin/inventory-items/'.$this->itemA->id)->assertStatus($status);
     $this->getJson('/api/v1/admin/inventory-losses')->assertStatus($status);
     $this->getJson('/api/v1/admin/inventory-losses/'.$loss->id)->assertStatus($status);

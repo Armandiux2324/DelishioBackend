@@ -260,3 +260,16 @@ test('development env template has one sync queue setting', function () {
     preg_match_all('/^QUEUE_CONNECTION=(.+)$/m', $template, $matches);
     expect(array_map('trim', $matches[1]))->toBe(['sync']);
 });
+
+test('CRUD update endpoints reject PATCH', function (string $path) {
+    $this->patchJson('/api/v1/'.$path.'/1')->assertMethodNotAllowed();
+})->with([
+    'admin/promotions',
+    'admin/employees',
+    'admin/menu-items',
+    'admin/inventory-items',
+    'admin/tax-classes',
+    'admin/super-categories',
+    'admin/categories',
+    'auth/super-admin/restaurants',
+]);
