@@ -6,21 +6,13 @@ use App\Models\Order;
 use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
 use Carbon\CarbonImmutable;
-use Illuminate\Database\Eloquent\Builder;
 
 class PaymentTransactionsReport
 {
     public function summarize(CarbonImmutable $from, CarbonImmutable $until): array
     {
-        $rows = Order::query()
+        $rows = Order::closedSales($from, $until)
             ->join('payments', 'payments.order_id', '=', 'orders.id')
-            ->where('orders.status', 'closed')
-            ->where('orders.closed_at', '>=', $from)
-            ->where('orders.closed_at', '<', $until)
-            ->where(function (Builder $orders) {
-                $orders->where('orders.source', 'pos')
-                    ->orWhereHas('advancePayment', fn (Builder $payment) => $payment->where('status', 'captured'));
-            })
             ->selectRaw("CASE WHEN orders.source = 'customer_app' THEN 'online' ELSE payments.method END AS payment_type")
             ->selectRaw('COUNT(*) AS transaction_count, SUM(payments.amount) AS amount, SUM(payments.surcharge_amount) AS surcharge_amount')
             ->groupBy('payment_type')
