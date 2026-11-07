@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\Admin\EmployeeController;
 use App\Http\Controllers\Api\Admin\InventoryItemController;
 use App\Http\Controllers\Api\Admin\InventoryLossController;
 use App\Http\Controllers\Api\Admin\MenuItemController;
+use App\Http\Controllers\Api\Admin\PaymentTransactionsReportController;
 use App\Http\Controllers\Api\Admin\PromotionController;
 use App\Http\Controllers\Api\Admin\RestaurantConfigurationController;
 use App\Http\Controllers\Api\Admin\SuperCategoryController;
@@ -79,6 +80,7 @@ Route::prefix('v1')->group(function () {
     Route::post('cash-registers/{cash_register}/close', [CashRegisterController::class, 'close'])
         ->middleware(['auth:sanctum', 'account.active', 'role:waiter']);
     Route::middleware(['auth:sanctum', 'account.active', 'role:admin'])->prefix('admin')->group(function () {
+        Route::get('reports/payment-transactions', PaymentTransactionsReportController::class)->name('admin.reports.payment-transactions');
         Route::apiResource('cash-movements', CashMovementController::class)->only(['index', 'show', 'store']);
         Route::get('customers', [CustomerController::class, 'index']);
         Route::get('customers/{customer}', [CustomerController::class, 'show'])->whereNumber('customer');
