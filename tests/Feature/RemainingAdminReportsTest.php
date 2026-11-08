@@ -163,8 +163,8 @@ test('shifts and payroll clip overnight hours and omit open shifts from pay', fu
         ->assertOk()->assertJsonCount(1, 'data.employees')
         ->assertJsonPath('data.employees.0.shifts.0.id', $this->own['shift']->id)
         ->assertJsonPath('data.employees.0.worked_hours', '2.5000')
-        ->assertJsonPath('data.employees.0.regular_hours', null)
-        ->assertJsonPath('data.employees.0.overtime_hours', null)
+        ->assertJsonPath('data.employees.0.regular_hours', '2.5000')
+        ->assertJsonPath('data.employees.0.overtime_hours', '0.0000')
         ->assertJsonPath('data.totals.estimated_pay', '49.98');
     $this->getJson(remainingReportUrl('payroll'))->assertOk()->assertJsonCount(2, 'data.employees')
         ->assertJsonPath('data.totals.estimated_pay', '49.98');

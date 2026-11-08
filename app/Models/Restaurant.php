@@ -27,6 +27,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'courtesy_daily_limit',
     'dual_pricing_enabled',
     'dual_pricing_percentage',
+    'overtime_weekly_hours',
+    'overtime_multiplier',
     'created_by_user_id',
     'stripe_account_id',
 ])]
@@ -49,6 +51,8 @@ class Restaurant extends Model
             'courtesy_percentage' => 'decimal:2',
             'courtesy_daily_limit' => 'integer',
             'dual_pricing_percentage' => 'decimal:2',
+            'overtime_weekly_hours' => 'decimal:2',
+            'overtime_multiplier' => 'decimal:2',
         ];
     }
 

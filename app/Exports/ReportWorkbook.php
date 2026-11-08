@@ -14,7 +14,7 @@ class ReportWorkbook implements Export, WithMultipleSheets
         'discount_total', 'estimated_cost', 'estimated_labor_cost', 'estimated_pay', 'estimated_profit',
         'estimated_unit_cost', 'expected_cash', 'external_platform_net_sales', 'gross_item_amount', 'gross_sales',
         'hourly_rate', 'labor_cost_percentage', 'loyalty_redeemed_amount', 'margin_percentage', 'net_amount',
-        'net_consumption', 'net_sales', 'opening_amount', 'overtime_hours', 'percentage', 'quantity',
+        'net_consumption', 'net_sales', 'opening_amount', 'overtime_hours', 'overtime_multiplier', 'overtime_weekly_hours', 'percentage', 'quantity',
         'regular_hours', 'returns_amount', 'returns_tax_amount', 'sale_price', 'subtotal', 'surcharge_amount', 'surcharge_total',
         'tax_total', 'tip_amount', 'total', 'total_amount', 'total_sales', 'uncosted_net_sales',
         'unit_cost', 'unit_price', 'value', 'worked_hours',
