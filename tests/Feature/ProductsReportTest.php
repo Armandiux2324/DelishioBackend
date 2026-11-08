@@ -81,7 +81,7 @@ test('product totals preserve adjustments and paid tax when filters hide other o
         ->assertJsonPath('data.totals.net_sales', '72.00')
         ->assertJsonPath('data.totals.tax_total', '4.00')
         ->assertJsonPath('data.totals.total_sales', '76.00')
-        ->assertJsonPath('data.totals.returns_amount', null);
+        ->assertJsonPath('data.totals.returns_amount', '0.00');
 
     foreach ([
         ['super_category_id' => $food->category->super_category_id],

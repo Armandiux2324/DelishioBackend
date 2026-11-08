@@ -9184,6 +9184,129 @@
       ]
     },
     {
+      "name": "21 — Devoluciones POS de prueba",
+      "description": "Opcional. Requiere la venta de prueba cerrada en la carpeta 10. El POST registra una devolución ya realizada.",
+      "item": [
+        {
+          "name": "Consultar partidas de la venta POS",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/admin/orders/{{order_id}}/items",
+            "description": "Consultar partidas de la venta POS",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP esperado 200', () => pm.expect([200]).to.include(pm.response.code));",
+                  "let j; try { j = pm.response.json(); } catch(e) { pm.test('Respuesta JSON', () => { throw e; }); }",
+                  "if (j && pm.response.code >= 200 && pm.response.code < 300) {",
+                  "",
+                  "}",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registrar devolución por partida RFA-037",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/admin/orders/{{order_id}}/items/{{order_item_id}}/returns",
+            "description": "Registrar devolución por partida RFA-037",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 1,\n  \"amount\": \"1.00\",\n  \"tax_amount\": \"0.00\",\n  \"reason\": \"Devolución de prueba\",\n  \"returned_at\": \"{{return_timestamp}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.variables.set('return_timestamp', new Date().toISOString().slice(0,19).replace('T',' '));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP esperado 201', () => pm.expect([201]).to.include(pm.response.code));",
+                  "let j; try { j = pm.response.json(); } catch(e) { pm.test('Respuesta JSON', () => { throw e; }); }",
+                  "if (j && pm.response.code >= 200 && pm.response.code < 300) {",
+                  "",
+                  "}",
+                  ""
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.environment.get('run_return_tests') !== 'true') { console.warn('Carpeta opcional omitida: run_return_tests=false'); pm.execution.skipRequest(); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
       "name": "90 — Eliminaciones y suspensión: SOLO DATOS DE PRUEBA",
       "description": "Opcional; usa registros desechables independientes del flujo principal.",
       "item": [
