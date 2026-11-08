@@ -7707,6 +7707,446 @@
               }
             }
           ]
+        },
+        {
+          "name": "Cortesías RFA-038",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/admin/reports/courtesies?from={{today}}&to={{today}}",
+            "description": "Fecha de autorización. Total de importes autorizados, incluso si luego se canceló la orden.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP esperado 200', () => pm.expect([200]).to.include(pm.response.code));",
+                  "let j; try { j = pm.response.json(); } catch(e) { pm.test('Respuesta JSON', () => { throw e; }); }",
+                  "if (j && pm.response.code >= 200 && pm.response.code < 300) {",
+                  "",
+                  "}",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Descuentos RFA-039",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/admin/reports/discounts?from={{today}}&to={{today}}",
+            "description": "Fecha de autorización. Total de importes autorizados, incluso si luego se canceló la orden.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP esperado 200', () => pm.expect([200]).to.include(pm.response.code));",
+                  "let j; try { j = pm.response.json(); } catch(e) { pm.test('Respuesta JSON', () => { throw e; }); }",
+                  "if (j && pm.response.code >= 200 && pm.response.code < 300) {",
+                  "",
+                  "}",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Margen por producto RFA-040",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/admin/reports/profit-margins?from={{today}}&to={{today}}",
+            "description": "Fecha de cierre. El costo estimado usa la receta vigente.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP esperado 200', () => pm.expect([200]).to.include(pm.response.code));",
+                  "let j; try { j = pm.response.json(); } catch(e) { pm.test('Respuesta JSON', () => { throw e; }); }",
+                  "if (j && pm.response.code >= 200 && pm.response.code < 300) {",
+                  "",
+                  "}",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Impuestos y exenciones RFA-041",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/admin/reports/taxes-and-exemptions?from={{today}}&to={{today}}",
+            "description": "Impuestos por fecha de cierre y exenciones por fecha de registro.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP esperado 200', () => pm.expect([200]).to.include(pm.response.code));",
+                  "let j; try { j = pm.response.json(); } catch(e) { pm.test('Respuesta JSON', () => { throw e; }); }",
+                  "if (j && pm.response.code >= 200 && pm.response.code < 300) {",
+                  "",
+                  "}",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Propinas RFA-042",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/admin/reports/tips?from={{today}}&to={{today}}",
+            "description": "Fecha de cierre. Incluye órdenes cobradas con propina.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP esperado 200', () => pm.expect([200]).to.include(pm.response.code));",
+                  "let j; try { j = pm.response.json(); } catch(e) { pm.test('Respuesta JSON', () => { throw e; }); }",
+                  "if (j && pm.response.code >= 200 && pm.response.code < 300) {",
+                  "",
+                  "}",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancelaciones RFA-043",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/admin/reports/cancellations?from={{today}}&to={{today}}",
+            "description": "Fecha de cancelación. En registros antiguos sin marca se usa la fecha de creación.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP esperado 200', () => pm.expect([200]).to.include(pm.response.code));",
+                  "let j; try { j = pm.response.json(); } catch(e) { pm.test('Respuesta JSON', () => { throw e; }); }",
+                  "if (j && pm.response.code >= 200 && pm.response.code < 300) {",
+                  "",
+                  "}",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ventas por plataforma externa RFA-044",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/admin/reports/external-platform-sales?from={{today}}&to={{today}}",
+            "description": "Fecha de venta. Desglosa importe bruto, comisión y neto por plataforma.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP esperado 200', () => pm.expect([200]).to.include(pm.response.code));",
+                  "let j; try { j = pm.response.json(); } catch(e) { pm.test('Respuesta JSON', () => { throw e; }); }",
+                  "if (j && pm.response.code >= 200 && pm.response.code < 300) {",
+                  "",
+                  "}",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ventas de productos por empleado RFA-045",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/admin/reports/employee-product-sales?from={{today}}&to={{today}}",
+            "description": "Fecha de cierre. Filtros opcionales employee_id y role.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP esperado 200', () => pm.expect([200]).to.include(pm.response.code));",
+                  "let j; try { j = pm.response.json(); } catch(e) { pm.test('Respuesta JSON', () => { throw e; }); }",
+                  "if (j && pm.response.code >= 200 && pm.response.code < 300) {",
+                  "",
+                  "}",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Turnos de empleados RFA-046",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/admin/reports/work-shifts?from={{today}}&to={{today}}",
+            "description": "Turnos que se traslapan con el rango. Filtros opcionales employee_id y role.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP esperado 200', () => pm.expect([200]).to.include(pm.response.code));",
+                  "let j; try { j = pm.response.json(); } catch(e) { pm.test('Respuesta JSON', () => { throw e; }); }",
+                  "if (j && pm.response.code >= 200 && pm.response.code < 300) {",
+                  "",
+                  "}",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Nómina RFA-047",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/admin/reports/payroll?from={{today}}&to={{today}}",
+            "description": "Estimado a tarifa base de turnos cerrados. Filtros opcionales employee_id y role.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP esperado 200', () => pm.expect([200]).to.include(pm.response.code));",
+                  "let j; try { j = pm.response.json(); } catch(e) { pm.test('Respuesta JSON', () => { throw e; }); }",
+                  "if (j && pm.response.code >= 200 && pm.response.code < 300) {",
+                  "",
+                  "}",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ventas vs costo laboral RFA-048",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/admin/reports/sales-vs-labor?from={{today}}&to={{today}}",
+            "description": "Consumo neto y ventas netas de plataformas contra nómina estimada. Filtros opcionales employee_id y role.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP esperado 200', () => pm.expect([200]).to.include(pm.response.code));",
+                  "let j; try { j = pm.response.json(); } catch(e) { pm.test('Respuesta JSON', () => { throw e; }); }",
+                  "if (j && pm.response.code >= 200 && pm.response.code < 300) {",
+                  "",
+                  "}",
+                  ""
+                ]
+              }
+            }
+          ]
         }
       ]
     },

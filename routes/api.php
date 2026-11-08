@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\Admin\OrdersReportController;
 use App\Http\Controllers\Api\Admin\PaymentTransactionsReportController;
 use App\Http\Controllers\Api\Admin\ProductsReportController;
 use App\Http\Controllers\Api\Admin\PromotionController;
+use App\Http\Controllers\Api\Admin\RemainingReportsController;
 use App\Http\Controllers\Api\Admin\RestaurantConfigurationController;
 use App\Http\Controllers\Api\Admin\SalesSummaryReportController;
 use App\Http\Controllers\Api\Admin\SuperCategoryController;
@@ -91,6 +92,12 @@ Route::prefix('v1')->group(function () {
         Route::get('reports/tax-associations', TaxAssociationsReportController::class)->name('admin.reports.tax-associations');
         Route::get('reports/products', ProductsReportController::class)->name('admin.reports.products');
         Route::get('reports/sales-summary', SalesSummaryReportController::class)->name('admin.reports.sales-summary');
+        foreach (['courtesies', 'discounts', 'profit-margins', 'taxes-and-exemptions', 'tips', 'cancellations', 'external-platform-sales'] as $report) {
+            Route::get("reports/{$report}", RemainingReportsController::class)->defaults('report', $report)->name("admin.reports.{$report}");
+        }
+        foreach (['employee-product-sales', 'work-shifts', 'payroll', 'sales-vs-labor'] as $report) {
+            Route::get("reports/{$report}", [RemainingReportsController::class, 'employees'])->defaults('report', $report)->name("admin.reports.{$report}");
+        }
         Route::apiResource('cash-movements', CashMovementController::class)->only(['index', 'show', 'store']);
         Route::get('customers', [CustomerController::class, 'index']);
         Route::get('customers/{customer}', [CustomerController::class, 'show'])->whereNumber('customer');

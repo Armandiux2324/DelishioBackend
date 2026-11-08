@@ -184,6 +184,7 @@ test('insufficient stock voids an authorization and sends one localized cancella
     $payment = AdvanceOrderPayment::withoutGlobalScope('restaurant')->where('order_id', $id)->sole();
     expect($payment->status)->toBe('voided')->and($payment->refund_attempts)->toBe(0)
         ->and($this->captures)->toBe(0)->and($this->refunds)->toBe(0)->and($this->voids)->toBe(1);
+    expect(Order::withoutGlobalScope('restaurant')->findOrFail($id)->cancelled_at->equalTo($payment->cancellation_requested_at))->toBeTrue();
     Notification::assertSentTo($this->customer->user, AdvanceOrderCancelled::class, fn ($notification) => $notification->locale === 'es');
     Notification::assertCount(1);
     $this->getJson("/api/v1/customer/orders/$id")->assertOk()->assertJsonPath('data.status', 'cancelled');
