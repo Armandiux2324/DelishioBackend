@@ -27,6 +27,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'courtesy_daily_limit',
     'dual_pricing_enabled',
     'dual_pricing_percentage',
+    'timezone',
     'overtime_weekly_hours',
     'overtime_multiplier',
     'created_by_user_id',

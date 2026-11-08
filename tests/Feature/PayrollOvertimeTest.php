@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\Employee;
+use App\Models\ExternalPlatformSale;
+use App\Models\Order;
 use App\Models\Restaurant;
 use App\Models\User;
 use App\Models\WorkShift;
@@ -111,3 +113,78 @@ test('the default multiplier pays fractional overtime using seconds and rounds p
         ->assertJsonPath('data.totals.overtime_seconds', 1820)
         ->assertJsonPath('data.totals.estimated_pay', '73.80');
 });
+
+test('restaurant time zone is validated and scoped to the administrator restaurant', function () {
+    $this->getJson($this->config)->assertOk()->assertJsonPath('data.timezone', 'UTC');
+    $this->patchJson($this->config, ['timezone' => 'America/Mexico_City'])->assertOk()
+        ->assertJsonPath('data.timezone', 'America/Mexico_City');
+    foreach (['MexicoCity', '+06:00', null] as $invalid) {
+        $this->patchJson($this->config, ['timezone' => $invalid])
+            ->assertUnprocessable()->assertJsonValidationErrors('timezone');
+    }
+    $this->getJson($this->config)->assertOk()->assertJsonPath('data.timezone', 'America/Mexico_City');
+    $this->actingAs($this->admins[1], 'sanctum')->getJson($this->config)->assertOk()->assertJsonPath('data.timezone', 'UTC');
+});
+
+test('local Monday splits overtime and sales and labor use the same local dates', function () {
+    $this->patchJson($this->config, ['timezone' => 'America/Mexico_City'])->assertOk();
+    $employee = Employee::factory()->create(['hourly_rate' => '20.00']);
+    foreach (['02', '03', '04', '05', '07'] as $day) {
+        WorkShift::factory()->create(['employee_id' => $employee->user_id, 'clock_in' => "2026-11-$day 15:00:00",
+            'clock_out' => $day === '07' ? "2026-11-$day 22:00:00" : "2026-11-$day 23:00:00"]);
+    }
+    $shift = WorkShift::factory()->create(['employee_id' => $employee->user_id, 'clock_in' => '2026-11-09 04:00:00',
+        'clock_out' => '2026-11-09 08:00:00']);
+
+    foreach (['2026-11-08 05:59:59', '2026-11-09 05:59:59', '2026-11-09 06:00:00'] as $at) {
+        Order::factory()->create(['waiter_employee_id' => $employee->user_id, 'cash_register_id' => null,
+            'status' => 'closed', 'closed_at' => $at, 'subtotal' => '100.00', 'total' => '100.00']);
+        ExternalPlatformSale::factory()->create(['registered_by_employee_id' => $employee->user_id, 'sale_date' => $at,
+            'total_amount' => '100.00', 'commission_amount' => '25.00']);
+    }
+
+    $sunday = '?from=2026-11-08&to=2026-11-08&employee_id='.$employee->user_id;
+    $this->getJson('/api/v1/admin/reports/payroll'.$sunday)->assertOk()
+        ->assertJsonPath('data.timezone', 'America/Mexico_City')
+        ->assertJsonPath('data.employees.0.shifts.0.id', $shift->id)
+        ->assertJsonPath('data.employees.0.shifts.0.clock_in', '2026-11-09T04:00:00.000000Z')
+        ->assertJsonPath('data.totals.regular_hours', '1.0000')
+        ->assertJsonPath('data.totals.overtime_hours', '1.0000')
+        ->assertJsonPath('data.totals.estimated_pay', '50.00');
+    $this->getJson('/api/v1/admin/reports/payroll?from=2026-11-09&to=2026-11-09&employee_id='.$employee->user_id)->assertOk()
+        ->assertJsonPath('data.totals.regular_hours', '2.0000')->assertJsonPath('data.totals.overtime_hours', '0.0000')
+        ->assertJsonPath('data.totals.estimated_pay', '40.00');
+    $this->getJson('/api/v1/admin/reports/sales-vs-labor'.$sunday)->assertOk()
+        ->assertJsonPath('data.timezone', 'America/Mexico_City')
+        ->assertJsonPath('data.totals.net_consumption', '100.00')
+        ->assertJsonPath('data.totals.external_platform_net_sales', '75.00')
+        ->assertJsonPath('data.totals.estimated_labor_cost', '50.00')
+        ->assertJsonPath('data.totals.labor_cost_percentage', '28.57');
+    $this->getJson('/api/v1/admin/reports/work-shifts'.$sunday)->assertOk()
+        ->assertJsonPath('data.timezone', 'UTC')->assertJsonPath('data.totals.worked_seconds', 0);
+
+    $response = $this->getJson('/api/v1/admin/reports/payroll'.$sunday.'&format=xlsx')->assertOk()->assertDownload('payroll.xlsx');
+    $path = $response->baseResponse->getFile()->getPathname();
+    try {
+        $workbook = IOFactory::createReader('Xlsx')->load($path);
+        $summary = array_column(array_slice($workbook->getSheetByName('Resumen')->toArray(null, false, false), 1), 1, 0);
+        expect($summary['timezone'])->toBe('America/Mexico_City')
+            ->and($summary['totals.overtime_hours'])->toBe(1.0);
+    } finally {
+        unlink($path);
+    }
+});
+
+test('daylight saving uses the actual elapsed hours in a local day', function (string $date, string $clockIn, string $clockOut, string $hours, string $pay) {
+    $this->patchJson($this->config, ['timezone' => 'America/New_York'])->assertOk();
+    $employee = Employee::factory()->create(['hourly_rate' => '20.00']);
+    WorkShift::factory()->create(['employee_id' => $employee->user_id, 'clock_in' => $clockIn, 'clock_out' => $clockOut]);
+    $this->getJson("/api/v1/admin/reports/payroll?from=$date&to=$date")->assertOk()
+        ->assertJsonPath('data.timezone', 'America/New_York')
+        ->assertJsonPath('data.totals.regular_hours', $hours)
+        ->assertJsonPath('data.totals.overtime_hours', '0.0000')
+        ->assertJsonPath('data.totals.estimated_pay', $pay);
+})->with([
+    'spring forward' => ['2026-03-08', '2026-03-08 05:00:00', '2026-03-09 05:00:00', '23.0000', '460.00'],
+    'fall back' => ['2026-11-01', '2026-11-01 04:00:00', '2026-11-02 06:00:00', '25.0000', '500.00'],
+]);

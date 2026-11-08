@@ -22,6 +22,7 @@ class RestaurantConfigurationResource extends RestaurantResource
             'courtesy_daily_limit' => $this->courtesy_daily_limit,
             'dual_pricing_enabled' => $this->dual_pricing_enabled,
             'dual_pricing_percentage' => $this->dual_pricing_percentage,
+            'timezone' => $this->timezone,
             'overtime_weekly_hours' => $this->overtime_weekly_hours,
             'overtime_multiplier' => $this->overtime_multiplier,
         ];
