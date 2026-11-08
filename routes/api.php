@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\Admin\EmployeeController;
 use App\Http\Controllers\Api\Admin\InventoryItemController;
 use App\Http\Controllers\Api\Admin\InventoryLossController;
 use App\Http\Controllers\Api\Admin\MenuItemController;
+use App\Http\Controllers\Api\Admin\OrdersReportController;
 use App\Http\Controllers\Api\Admin\PaymentTransactionsReportController;
 use App\Http\Controllers\Api\Admin\PromotionController;
 use App\Http\Controllers\Api\Admin\RestaurantConfigurationController;
@@ -84,6 +85,7 @@ Route::prefix('v1')->group(function () {
     Route::middleware(['auth:sanctum', 'account.active', 'role:admin'])->prefix('admin')->group(function () {
         Route::get('dashboard', DashboardController::class)->name('admin.dashboard');
         Route::get('reports/payment-transactions', PaymentTransactionsReportController::class)->name('admin.reports.payment-transactions');
+        Route::get('reports/orders', OrdersReportController::class)->name('admin.reports.orders');
         Route::get('reports/sales-summary', SalesSummaryReportController::class)->name('admin.reports.sales-summary');
         Route::apiResource('cash-movements', CashMovementController::class)->only(['index', 'show', 'store']);
         Route::get('customers', [CustomerController::class, 'index']);
