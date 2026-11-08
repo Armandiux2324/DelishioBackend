@@ -9184,8 +9184,8 @@
       ]
     },
     {
-      "name": "21 — Devoluciones POS de prueba",
-      "description": "Opcional. Requiere la venta de prueba cerrada en la carpeta 10. El POST registra una devolución ya realizada.",
+      "name": "21 — Devoluciones por partida de prueba",
+      "description": "Opcional. El ejemplo usa la venta POS cerrada en la carpeta 10. Las mismas rutas aceptan ventas en línea con pago capturado.",
       "item": [
         {
           "name": "Consultar partidas de la venta POS",

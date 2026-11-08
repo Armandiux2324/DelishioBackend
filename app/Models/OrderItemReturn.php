@@ -28,7 +28,7 @@ class OrderItemReturn extends Model
         static::addGlobalScope('restaurant', fn (Builder $query) => $query->whereHas('item'));
         static::creating(function (OrderItemReturn $return) {
             abort_unless(OrderItem::whereKey($return->order_item_id)->where('cancelled', false)
-                ->whereHas('order', fn (Builder $order) => $order->where('source', 'pos')->where('status', 'closed')->whereNotNull('closed_at'))
+                ->whereHas('order', fn (Builder $order) => $order->completedSales())
                 ->exists(), 403);
             abort_unless(Employee::active()->whereKey($return->recorded_by_employee_id)->where('role', 'admin')->exists(), 403);
         });

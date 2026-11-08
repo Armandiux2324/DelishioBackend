@@ -27,7 +27,7 @@ beforeEach(function () {
     $this->actingAs($this->admins[0], 'sanctum');
 });
 
-function returnableProductSale(string $closedAt = '2026-11-05 12:00:00', string $source = 'pos'): array
+function returnableProductSale(string $closedAt = '2026-11-05 12:00:00', string $source = 'pos', ?string $paymentStatus = null): array
 {
     $waiter = Employee::factory()->create();
     $order = Order::factory()->create(['waiter_employee_id' => $source === 'pos' ? $waiter->user_id : null,
@@ -41,7 +41,18 @@ function returnableProductSale(string $closedAt = '2026-11-05 12:00:00', string 
         TaxExemption::factory()->for($order)->create(['order_item_id' => $second->id]);
     }
     $order->update(['status' => 'closed', 'closed_at' => $closedAt, 'subtotal' => '50.00',
-        'discount_total' => $source === 'pos' ? '5.00' : '0.00', 'tax_total' => '3.00', 'total' => '48.00']);
+        'discount_total' => $source === 'pos' ? '5.00' : '0.00', 'tax_total' => '3.00',
+        'total' => $source === 'pos' ? '48.00' : '53.00']);
+    if ($paymentStatus !== null) {
+        $order->advancePayment()->create([
+            'stripe_account_id' => 'acct_Returns',
+            'currency' => 'MXN',
+            'amount' => $order->total,
+            'request_key' => (string) Str::uuid(),
+            'request_hash' => str_repeat('a', 64),
+            'status' => $paymentStatus,
+        ]);
+    }
 
     return [$order, $first, $second, $cancelled];
 }
@@ -88,10 +99,13 @@ test('registering an already completed refund is idempotent and cannot exceed th
     $this->assertDatabaseCount('cash_movements', 0);
 });
 
-test('only closed non-cancelled POS lines in the administrators restaurant can be returned', function () {
+test('only paid closed lines in the administrators restaurant can be returned', function () {
     [$order, $item, , $cancelled] = returnableProductSale();
-    [$online, $onlineItem] = returnableProductSale(source: 'customer_app');
-    $this->postJson(lineReturnUrl($online, $onlineItem), lineReturnPayload(), lineReturnHeaders())->assertConflict();
+    foreach ([null, 'authorized', 'refunded'] as $paymentStatus) {
+        [$online, $onlineItem] = returnableProductSale(source: 'customer_app', paymentStatus: $paymentStatus);
+        $this->getJson("/api/v1/admin/orders/{$online->id}/items")->assertConflict();
+        $this->postJson(lineReturnUrl($online, $onlineItem), lineReturnPayload(), lineReturnHeaders())->assertConflict();
+    }
     $this->postJson(lineReturnUrl($order, $cancelled), lineReturnPayload(), lineReturnHeaders())->assertConflict();
 
     $this->actingAs($this->admins[1], 'sanctum');
@@ -108,26 +122,28 @@ test('only closed non-cancelled POS lines in the administrators restaurant can b
     $this->assertDatabaseCount('order_item_returns', 0);
 });
 
-test('product JSON and XLSX reconcile returns by refund date and retain tenant and modifier filters', function () {
-    [$order, $item, $second] = returnableProductSale();
+test('product JSON and XLSX reconcile returns by refund date and retain tenant and modifier filters', function (string $source) {
+    $paymentStatus = $source === 'customer_app' ? 'captured' : null;
+    [$order, $item, $second] = returnableProductSale(source: $source, paymentStatus: $paymentStatus);
+    $this->getJson("/api/v1/admin/orders/{$order->id}/items")->assertOk()->assertJsonPath('data.0.id', $item->id);
     $this->postJson(lineReturnUrl($order, $item), lineReturnPayload(), lineReturnHeaders())->assertCreated();
     $this->postJson(lineReturnUrl($order, $second), lineReturnPayload([
         'amount' => '10.00', 'tax_amount' => '0.00', 'returned_at' => '2026-11-07 00:00:00',
     ]), lineReturnHeaders())->assertCreated();
     $this->actingAs($this->admins[1], 'sanctum');
-    [$foreign, $foreignItem] = returnableProductSale();
+    [$foreign, $foreignItem] = returnableProductSale(source: $source, paymentStatus: $paymentStatus);
     $this->postJson(lineReturnUrl($foreign, $foreignItem), lineReturnPayload(), lineReturnHeaders())->assertCreated();
     $this->actingAs($this->admins[0], 'sanctum');
 
     $report = '/api/v1/admin/reports/products?';
     $this->getJson($report.'from=2026-11-05&to=2026-11-05')->assertOk()
-        ->assertJsonPath('data.totals.returns_amount', '0.00')->assertJsonPath('data.totals.total_sales', '48.00');
+        ->assertJsonPath('data.totals.returns_amount', '0.00')->assertJsonPath('data.totals.total_sales', $source === 'pos' ? '48.00' : '53.00');
     $this->getJson($report.'from=2026-11-05&to=2026-11-06')->assertOk()
         ->assertJsonPath('data.totals.quantity_sold', 3)->assertJsonPath('data.totals.quantity_returned', 1)
-        ->assertJsonPath('data.totals.gross_sales', '50.00')->assertJsonPath('data.totals.discount_total', '5.00')
+        ->assertJsonPath('data.totals.gross_sales', '50.00')->assertJsonPath('data.totals.discount_total', $source === 'pos' ? '5.00' : '0.00')
         ->assertJsonPath('data.totals.returns_amount', '17.50')->assertJsonPath('data.totals.returns_tax_amount', '1.50')
-        ->assertJsonPath('data.totals.net_sales', '27.50')->assertJsonPath('data.totals.tax_total', '1.50')
-        ->assertJsonPath('data.totals.total_sales', '29.00');
+        ->assertJsonPath('data.totals.net_sales', $source === 'pos' ? '27.50' : '32.50')->assertJsonPath('data.totals.tax_total', '1.50')
+        ->assertJsonPath('data.totals.total_sales', $source === 'pos' ? '29.00' : '34.00');
 
     $filtered = $report.'from=2026-11-06&to=2026-11-06&modifier=sin';
     $this->getJson($filtered)->assertOk()->assertJsonCount(1, 'data.products')
@@ -149,4 +165,4 @@ test('product JSON and XLSX reconcile returns by refund date and retain tenant a
     } finally {
         unlink($path);
     }
-});
+})->with(['pos', 'customer_app']);

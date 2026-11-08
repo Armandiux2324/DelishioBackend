@@ -19,7 +19,7 @@ class OrderItemReturnController extends Controller
 {
     public function index(Order $order): AnonymousResourceCollection
     {
-        $this->ensureClosedPos($order);
+        $this->ensureCompletedSale($order);
 
         return OrderItemResource::collection($order->items()->where('cancelled', false)->with('menuItem')
             ->withSum('returns as quantity_returned', 'quantity')->orderBy('id')->get());
@@ -32,7 +32,7 @@ class OrderItemReturnController extends Controller
             // Serialize returns for the entire order because its tax budget is shared across lines.
             $order = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
             $item = $order->items()->findOrFail($item->id);
-            $this->ensureClosedPos($order);
+            $this->ensureCompletedSale($order);
             abort_if($item->cancelled, 409, __('La partida cancelada no se puede devolver.'));
             $previous = $item->returns()->get();
             $amount = BigDecimal::of((string) $data['amount'])->toScale(2);
@@ -77,9 +77,9 @@ class OrderItemReturnController extends Controller
         return response()->json(['data' => $return], $return->wasRecentlyCreated ? 201 : 200);
     }
 
-    private function ensureClosedPos(Order $order): void
+    private function ensureCompletedSale(Order $order): void
     {
-        abort_unless($order->source === 'pos' && $order->status === 'closed' && $order->closed_at !== null,
-            409, __('Solo se pueden registrar devoluciones de partidas cobradas en el punto de venta.'));
+        abort_unless(Order::completedSales()->whereKey($order->id)->exists(),
+            409, __('Solo se pueden registrar devoluciones de partidas de ventas cobradas y cerradas.'));
     }
 }
