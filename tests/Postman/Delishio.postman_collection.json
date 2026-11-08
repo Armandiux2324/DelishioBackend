@@ -7629,6 +7629,46 @@
           ]
         },
         {
+          "name": "Reporte de productos RFA-037",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/admin/reports/products?from={{today}}&to={{today}}",
+            "description": "Fechas de cierre inclusivas en UTC. Opcionales super_category_id, category_id y modifier. El costo usa la receta actual y el impuesto se distribuye desde el total de la orden.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP esperado 200', () => pm.expect([200]).to.include(pm.response.code));",
+                  "let j; try { j = pm.response.json(); } catch(e) { pm.test('Respuesta JSON', () => { throw e; }); }",
+                  "if (j && pm.response.code >= 200 && pm.response.code < 300) {",
+                  "",
+                  "}",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Resumen de ventas RFA-036",
           "request": {
             "method": "GET",

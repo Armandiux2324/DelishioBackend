@@ -13,7 +13,7 @@ use Illuminate\Validation\ValidationException;
 class OrderTotals
 {
     /** @return array{subtotal: BigDecimal, lines: array<int, BigDecimal>} */
-    public function basis(Order $order, ?Collection $items = null): array
+    public function basis(Order $order, ?Collection $items = null, ?Collection $discounts = null): array
     {
         $items ??= $order->items()->where('cancelled', false)->orderBy('id')->get();
         $subtotal = BigDecimal::of('0.00');
@@ -22,7 +22,8 @@ class OrderTotals
             $lines[$item->id] = BigDecimal::of($item->unit_price)->multipliedBy($item->quantity);
             $subtotal = $subtotal->plus($lines[$item->id]);
         }
-        foreach ($order->discounts()->orderBy('id')->get() as $discount) {
+        $discounts ??= $order->discounts()->orderBy('id')->get();
+        foreach ($discounts as $discount) {
             if ($discount->order_item_id !== null) {
                 $id = $discount->order_item_id;
                 if (isset($lines[$id])) {
@@ -72,30 +73,40 @@ class OrderTotals
 
     private function allocate(array &$lines, BigDecimal $amount): void
     {
-        $total = BigDecimal::of('0.00');
-        foreach ($lines as $line) {
-            $total = $total->plus($line);
-        }
-        if ($total->isZero()) {
-            return;
-        }
+        $total = BigDecimal::sum('0.00', ...array_values($lines));
         if ($amount->isGreaterThan($total)) {
             $amount = $total;
         }
+        foreach ($this->proportionalShares($lines, $amount) as $id => $part) {
+            $lines[$id] = $lines[$id]->minus($part);
+        }
+    }
+
+    /**
+     * @param  array<int, BigDecimal>  $weights
+     * @return array<int, BigDecimal>
+     */
+    public function proportionalShares(array $weights, BigDecimal $amount): array
+    {
+        $total = BigDecimal::sum('0.00', ...array_values($weights));
+        if ($total->isZero() || $amount->isZero()) {
+            return array_fill_keys(array_keys($weights), BigDecimal::of('0.00'));
+        }
         $left = $amount;
         $parts = [];
-        foreach ($lines as $id => $line) {
-            $parts[$id] = $amount->multipliedBy($line)->dividedBy($total, 2, RoundingMode::Down);
+        foreach ($weights as $id => $weight) {
+            $parts[$id] = $amount->multipliedBy($weight)->dividedBy($total, 2, RoundingMode::Down);
             $left = $left->minus($parts[$id]);
         }
-        // Distribute leftover cents deterministically without exceeding any line's balance.
-        foreach ($lines as $id => $line) {
-            if ($left->isGreaterThan(0) && $line->minus($parts[$id])->isGreaterThan(0)) {
+        // Keep the original line order when assigning leftover cents.
+        foreach ($weights as $id => $weight) {
+            if ($left->isPositive() && $weight->isPositive()) {
                 $parts[$id] = $parts[$id]->plus('0.01');
                 $left = $left->minus('0.01');
             }
-            $lines[$id] = $line->minus($parts[$id]);
         }
+
+        return $parts;
     }
 
     private function taxRates(Collection $items): array
