@@ -601,7 +601,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Delishio A {{run_id}}\",\n  \"description\": \"Restaurante de pruebas\",\n  \"address\": \"Calle Prueba 123\",\n  \"phone\": \"5551234567\",\n  \"schedule\": \"Lunes a domingo 09:00–22:00\",\n  \"currency\": \"USD\",\n  \"loyalty_enabled\": true,\n  \"loyalty_factor\": \"2.0000\",\n  \"loyalty_redeem_value\": \"10.0000\",\n  \"discount_limit_per_shift\": \"500.00\",\n  \"courtesy_percentage\": \"10.00\",\n  \"courtesy_daily_limit\": 20,\n  \"dual_pricing_enabled\": true,\n  \"dual_pricing_percentage\": \"3.00\"\n}",
+              "raw": "{\n  \"name\": \"Delishio A {{run_id}}\",\n  \"description\": \"Restaurante de pruebas\",\n  \"address\": \"Calle Prueba 123\",\n  \"phone\": \"5551234567\",\n  \"schedule\": \"Lunes a domingo 09:00–22:00\",\n  \"currency\": \"USD\",\n  \"loyalty_enabled\": true,\n  \"loyalty_factor\": \"2.0000\",\n  \"loyalty_redeem_value\": \"10.0000\",\n  \"discount_limit_per_shift\": \"500.00\",\n  \"courtesy_percentage\": \"10.00\",\n  \"courtesy_daily_limit\": 20,\n  \"dual_pricing_enabled\": true,\n  \"dual_pricing_percentage\": \"3.00\",\n  \"overtime_weekly_hours\": \"40.00\",\n  \"overtime_multiplier\": \"1.50\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -8132,7 +8132,7 @@
               }
             ],
             "url": "{{base_url}}/api/v1/admin/reports/payroll?from={{today}}&to={{today}}",
-            "description": "Estimado a tarifa base de turnos cerrados. Filtros opcionales employee_id y role.",
+            "description": "Estimado de turnos cerrados con horas extra según la política del restaurante. Semana de lunes a domingo en UTC. Filtros opcionales employee_id y role.",
             "auth": {
               "type": "bearer",
               "bearer": [

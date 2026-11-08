@@ -44,6 +44,8 @@ class UpdateRestaurantConfigurationRequest extends FormRequest
             'courtesy_daily_limit' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:4294967295'],
             'dual_pricing_enabled' => ['sometimes', 'required', 'boolean'],
             'dual_pricing_percentage' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:'.Restaurant::MAX_DUAL_PRICING_PERCENTAGE, 'decimal:0,2'],
+            'overtime_weekly_hours' => ['sometimes', 'required', 'numeric', 'min:0', 'max:168', 'decimal:0,2'],
+            'overtime_multiplier' => ['sometimes', 'required', 'numeric', 'min:1', 'max:99.99', 'decimal:0,2'],
             'id' => ['missing'],
             'stripe_account_id' => ['missing'],
             'restaurant_id' => ['missing'],
