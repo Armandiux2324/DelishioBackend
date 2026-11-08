@@ -8311,6 +8311,826 @@
       ]
     },
     {
+      "name": "20 — Exportación XLSX",
+      "description": "Usa Send and Download para guardar el archivo. Los filtros son los mismos que en la consulta JSON.",
+      "item": [
+        {
+          "name": "Transacciones por tipo de pago RFA-033 — XLSX",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/admin/reports/payment-transactions?from={{today}}&to={{today}}&format=xlsx",
+            "description": "Transacciones por tipo de pago RFA-033 — XLSX",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP esperado 200', () => pm.expect([200]).to.include(pm.response.code));",
+                  "pm.test('Archivo XLSX', () => { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); pm.expect(pm.response.headers.get('Content-Disposition')).to.include('.xlsx'); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Órdenes pagadas RFA-034 — XLSX",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/admin/reports/orders?type=paid&from={{today}}&to={{today}}&format=xlsx",
+            "description": "Órdenes pagadas RFA-034 — XLSX",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP esperado 200', () => pm.expect([200]).to.include(pm.response.code));",
+                  "pm.test('Archivo XLSX', () => { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); pm.expect(pm.response.headers.get('Content-Disposition')).to.include('.xlsx'); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Órdenes abiertas RFA-034 — XLSX",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/admin/reports/orders?type=open&from={{today}}&to={{today}}&format=xlsx",
+            "description": "Órdenes abiertas RFA-034 — XLSX",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP esperado 200', () => pm.expect([200]).to.include(pm.response.code));",
+                  "pm.test('Archivo XLSX', () => { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); pm.expect(pm.response.headers.get('Content-Disposition')).to.include('.xlsx'); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Órdenes en línea RFA-034 — XLSX",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/admin/reports/orders?type=online&from={{today}}&to={{today}}&format=xlsx",
+            "description": "Órdenes en línea RFA-034 — XLSX",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP esperado 200', () => pm.expect([200]).to.include(pm.response.code));",
+                  "pm.test('Archivo XLSX', () => { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); pm.expect(pm.response.headers.get('Content-Disposition')).to.include('.xlsx'); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Asociación de impuestos RFA-035 — XLSX",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/admin/reports/tax-associations?page=1&format=xlsx",
+            "description": "Asociación de impuestos RFA-035 — XLSX",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP esperado 200', () => pm.expect([200]).to.include(pm.response.code));",
+                  "pm.test('Archivo XLSX', () => { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); pm.expect(pm.response.headers.get('Content-Disposition')).to.include('.xlsx'); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reporte de productos RFA-037 — XLSX",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/admin/reports/products?from={{today}}&to={{today}}&format=xlsx",
+            "description": "Reporte de productos RFA-037 — XLSX",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP esperado 200', () => pm.expect([200]).to.include(pm.response.code));",
+                  "pm.test('Archivo XLSX', () => { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); pm.expect(pm.response.headers.get('Content-Disposition')).to.include('.xlsx'); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Resumen de ventas RFA-036 — XLSX",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/admin/reports/sales-summary?from={{today}}&to={{today}}&format=xlsx",
+            "description": "Resumen de ventas RFA-036 — XLSX",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP esperado 200', () => pm.expect([200]).to.include(pm.response.code));",
+                  "pm.test('Archivo XLSX', () => { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); pm.expect(pm.response.headers.get('Content-Disposition')).to.include('.xlsx'); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cortesías RFA-038 — XLSX",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/admin/reports/courtesies?from={{today}}&to={{today}}&format=xlsx",
+            "description": "Cortesías RFA-038 — XLSX",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP esperado 200', () => pm.expect([200]).to.include(pm.response.code));",
+                  "pm.test('Archivo XLSX', () => { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); pm.expect(pm.response.headers.get('Content-Disposition')).to.include('.xlsx'); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Descuentos RFA-039 — XLSX",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/admin/reports/discounts?from={{today}}&to={{today}}&format=xlsx",
+            "description": "Descuentos RFA-039 — XLSX",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP esperado 200', () => pm.expect([200]).to.include(pm.response.code));",
+                  "pm.test('Archivo XLSX', () => { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); pm.expect(pm.response.headers.get('Content-Disposition')).to.include('.xlsx'); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Margen por producto RFA-040 — XLSX",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/admin/reports/profit-margins?from={{today}}&to={{today}}&format=xlsx",
+            "description": "Margen por producto RFA-040 — XLSX",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP esperado 200', () => pm.expect([200]).to.include(pm.response.code));",
+                  "pm.test('Archivo XLSX', () => { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); pm.expect(pm.response.headers.get('Content-Disposition')).to.include('.xlsx'); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Impuestos y exenciones RFA-041 — XLSX",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/admin/reports/taxes-and-exemptions?from={{today}}&to={{today}}&format=xlsx",
+            "description": "Impuestos y exenciones RFA-041 — XLSX",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP esperado 200', () => pm.expect([200]).to.include(pm.response.code));",
+                  "pm.test('Archivo XLSX', () => { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); pm.expect(pm.response.headers.get('Content-Disposition')).to.include('.xlsx'); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Propinas RFA-042 — XLSX",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/admin/reports/tips?from={{today}}&to={{today}}&format=xlsx",
+            "description": "Propinas RFA-042 — XLSX",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP esperado 200', () => pm.expect([200]).to.include(pm.response.code));",
+                  "pm.test('Archivo XLSX', () => { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); pm.expect(pm.response.headers.get('Content-Disposition')).to.include('.xlsx'); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancelaciones RFA-043 — XLSX",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/admin/reports/cancellations?from={{today}}&to={{today}}&format=xlsx",
+            "description": "Cancelaciones RFA-043 — XLSX",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP esperado 200', () => pm.expect([200]).to.include(pm.response.code));",
+                  "pm.test('Archivo XLSX', () => { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); pm.expect(pm.response.headers.get('Content-Disposition')).to.include('.xlsx'); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ventas por plataforma externa RFA-044 — XLSX",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/admin/reports/external-platform-sales?from={{today}}&to={{today}}&format=xlsx",
+            "description": "Ventas por plataforma externa RFA-044 — XLSX",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP esperado 200', () => pm.expect([200]).to.include(pm.response.code));",
+                  "pm.test('Archivo XLSX', () => { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); pm.expect(pm.response.headers.get('Content-Disposition')).to.include('.xlsx'); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ventas de productos por empleado RFA-045 — XLSX",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/admin/reports/employee-product-sales?from={{today}}&to={{today}}&format=xlsx",
+            "description": "Ventas de productos por empleado RFA-045 — XLSX",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP esperado 200', () => pm.expect([200]).to.include(pm.response.code));",
+                  "pm.test('Archivo XLSX', () => { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); pm.expect(pm.response.headers.get('Content-Disposition')).to.include('.xlsx'); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Turnos de empleados RFA-046 — XLSX",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/admin/reports/work-shifts?from={{today}}&to={{today}}&format=xlsx",
+            "description": "Turnos de empleados RFA-046 — XLSX",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP esperado 200', () => pm.expect([200]).to.include(pm.response.code));",
+                  "pm.test('Archivo XLSX', () => { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); pm.expect(pm.response.headers.get('Content-Disposition')).to.include('.xlsx'); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Nómina RFA-047 — XLSX",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/admin/reports/payroll?from={{today}}&to={{today}}&format=xlsx",
+            "description": "Nómina RFA-047 — XLSX",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP esperado 200', () => pm.expect([200]).to.include(pm.response.code));",
+                  "pm.test('Archivo XLSX', () => { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); pm.expect(pm.response.headers.get('Content-Disposition')).to.include('.xlsx'); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ventas vs costo laboral RFA-048 — XLSX",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/admin/reports/sales-vs-labor?from={{today}}&to={{today}}&format=xlsx",
+            "description": "Ventas vs costo laboral RFA-048 — XLSX",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP esperado 200', () => pm.expect([200]).to.include(pm.response.code));",
+                  "pm.test('Archivo XLSX', () => { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); pm.expect(pm.response.headers.get('Content-Disposition')).to.include('.xlsx'); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Resumen de cierre de caja RFA-049 — XLSX",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/admin/reports/cash-closures?from={{today}}&to={{today}}&format=xlsx",
+            "description": "Resumen de cierre de caja RFA-049 — XLSX",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP esperado 200', () => pm.expect([200]).to.include(pm.response.code));",
+                  "pm.test('Archivo XLSX', () => { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); pm.expect(pm.response.headers.get('Content-Disposition')).to.include('.xlsx'); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Auditoría del menú RFA-050 — XLSX",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/admin/reports/menu-audit?from={{today}}&to={{today}}&format=xlsx",
+            "description": "Auditoría del menú RFA-050 — XLSX",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP esperado 200', () => pm.expect([200]).to.include(pm.response.code));",
+                  "pm.test('Archivo XLSX', () => { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); pm.expect(pm.response.headers.get('Content-Disposition')).to.include('.xlsx'); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Valor de inventario RFA-051 — XLSX",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/admin/reports/inventory-value?format=xlsx",
+            "description": "Valor de inventario RFA-051 — XLSX",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP esperado 200', () => pm.expect([200]).to.include(pm.response.code));",
+                  "pm.test('Archivo XLSX', () => { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); pm.expect(pm.response.headers.get('Content-Disposition')).to.include('.xlsx'); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pérdidas RFA-052 — XLSX",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/admin/reports/inventory-losses?from={{today}}&to={{today}}&format=xlsx",
+            "description": "Pérdidas RFA-052 — XLSX",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{admin_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP esperado 200', () => pm.expect([200]).to.include(pm.response.code));",
+                  "pm.test('Archivo XLSX', () => { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); pm.expect(pm.response.headers.get('Content-Disposition')).to.include('.xlsx'); });",
+                  ""
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "90 — Eliminaciones y suspensión: SOLO DATOS DE PRUEBA",
       "description": "Opcional; usa registros desechables independientes del flujo principal.",
       "item": [
