@@ -18,8 +18,8 @@ class LaborReports
 {
     public function shifts(CarbonImmutable $from, CarbonImmutable $until, array $filters): array
     {
-        $shifts = WorkShift::where('clock_in', '<', $until)
-            ->where(fn (Builder $query) => $query->whereNull('clock_out')->orWhere('clock_out', '>', $from))
+        $shifts = WorkShift::where('clock_in', '<', $until->utc())
+            ->where(fn (Builder $query) => $query->whereNull('clock_out')->orWhere('clock_out', '>', $from->utc()))
             ->whereHas('employee', function (Builder $query) use ($filters) {
                 $this->filterEmployees($query, $filters);
             })
@@ -96,13 +96,13 @@ class LaborReports
 
     public function salesVsLabor(CarbonImmutable $from, CarbonImmutable $until, array $filters): array
     {
-        $orders = Order::closedSales($from, $until)
+        $orders = Order::closedSales($from->utc(), $until->utc())
             ->when($this->filtersEmployees($filters), fn (Builder $orders) => $orders
                 ->whereHas('waiter', fn (Builder $employee) => $this->filterEmployees($employee, $filters)))
             ->selectRaw('COALESCE(SUM(subtotal), 0) AS subtotal, COALESCE(SUM(discount_total), 0) AS discount_total, COALESCE(SUM(loyalty_redeemed_amount), 0) AS loyalty_redeemed_amount')
             ->firstOrFail();
         $consumption = BigDecimal::of($orders->subtotal)->minus($orders->discount_total)->minus($orders->loyalty_redeemed_amount);
-        $platformSales = ExternalPlatformSale::where('sale_date', '>=', $from)->where('sale_date', '<', $until)
+        $platformSales = ExternalPlatformSale::where('sale_date', '>=', $from->utc())->where('sale_date', '<', $until->utc())
             ->when($this->filtersEmployees($filters), fn (Builder $sales) => $sales
                 ->whereHas('registeredBy', fn (Builder $employee) => $this->filterEmployees($employee, $filters)))
             ->selectRaw('COALESCE(SUM(net_amount), 0) AS net_amount')->firstOrFail();
@@ -144,7 +144,7 @@ class LaborReports
                     $remaining = $weeklyLimit;
                 }
 
-                $boundary = min($end, $week->addWeek()->timestamp);
+                $boundary = min($end, $week->addWeek()->startOfWeek(CarbonInterface::MONDAY)->timestamp);
                 $duration = $boundary - $start;
                 $regular = min($remaining, $duration);
                 $remaining -= $regular;

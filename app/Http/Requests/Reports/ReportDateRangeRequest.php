@@ -21,13 +21,16 @@ class ReportDateRangeRequest extends FormRequest
         ];
     }
 
-    public function startDate(): CarbonImmutable
+    public function startDate(?string $timezone = null): CarbonImmutable
     {
-        return CarbonImmutable::parse($this->validated('from'), config('app.timezone'))->startOfDay();
+        return CarbonImmutable::parse($this->validated('from'), $timezone ?? config('app.timezone'))->startOfDay();
     }
 
-    public function endDateExclusive(): CarbonImmutable
+    public function endDateExclusive(?string $timezone = null): CarbonImmutable
     {
-        return CarbonImmutable::parse($this->validated('to'), config('app.timezone'))->startOfDay()->addDay();
+        // Advance the calendar date before resolving midnight in a zone where midnight can be skipped.
+        $nextDate = CarbonImmutable::parse($this->validated('to'), 'UTC')->addDay()->toDateString();
+
+        return CarbonImmutable::parse($nextDate, $timezone ?? config('app.timezone'))->startOfDay();
     }
 }

@@ -6,11 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Reports\EmployeeReportRequest;
 use App\Http\Requests\Reports\ReportDateRangeRequest;
 use App\Http\Responses\ReportResponse;
+use App\Models\Restaurant;
 use App\Services\Reports\EmployeeProductSalesReport;
 use App\Services\Reports\ExternalPlatformSalesReport;
 use App\Services\Reports\LaborReports;
 use App\Services\Reports\OrderAuditReports;
 use App\Services\Reports\ProfitMarginsReport;
+use App\Support\RestaurantContext;
 use Closure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -38,15 +40,24 @@ class RemainingReportsController extends Controller
             'work-shifts' => app(LaborReports::class)->shifts(...),
             'payroll' => app(LaborReports::class)->payroll(...),
             'sales-vs-labor' => app(LaborReports::class)->salesVsLabor(...),
-        });
+        }, useRestaurantTimezone: in_array($report, ['payroll', 'sales-vs-labor'], true));
     }
 
-    private function respond(ReportDateRangeRequest $request, Closure $report): JsonResponse|BinaryFileResponse
+    private function respond(ReportDateRangeRequest $request, Closure $report, bool $useRestaurantTimezone = false): JsonResponse|BinaryFileResponse
     {
-        return ReportResponse::make($request, [
-            'filters' => $request->validated(),
-            'timezone' => config('app.timezone'),
-            ...DB::transaction(fn () => $report($request->startDate(), $request->endDateExclusive(), $request->validated())),
-        ]);
+        $data = DB::transaction(function () use ($request, $report, $useRestaurantTimezone) {
+            $timezone = $useRestaurantTimezone
+                ? Restaurant::findOrFail(app(RestaurantContext::class)->id())->timezone
+                : config('app.timezone');
+            $filters = $request->validated();
+
+            return [
+                'filters' => $filters,
+                'timezone' => $timezone,
+                ...$report($request->startDate($timezone), $request->endDateExclusive($timezone), $filters),
+            ];
+        });
+
+        return ReportResponse::make($request, $data);
     }
 }
