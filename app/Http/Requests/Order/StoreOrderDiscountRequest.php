@@ -14,7 +14,7 @@ class StoreOrderDiscountRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'admin_user_id' => ['required', 'integer'], 'pin' => ['required', 'string', 'regex:/\\A[0-9]{4,6}\\z/'],
+            'admin_user_id' => ['sometimes', 'required', 'integer'], 'pin' => ['required', 'string', 'regex:/\\A[0-9]{4,6}\\z/'],
             'order_item_id' => ['sometimes', 'nullable', 'integer'],
             'percentage' => ['nullable', 'required_without:amount', 'prohibits:amount', 'numeric', 'gt:0', 'max:100', 'decimal:0,2'],
             'amount' => ['nullable', 'required_without:percentage', 'prohibits:percentage', 'numeric', 'gt:0', 'max:99999999.99', 'decimal:0,2'],

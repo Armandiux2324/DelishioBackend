@@ -3798,7 +3798,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"admin_user_id\": {{admin_user_id}},\n  \"pin\": \"{{admin_pin}}\",\n  \"percentage\": \"5.00\"\n}",
+              "raw": "{\n  \"pin\": \"{{admin_pin}}\",\n  \"percentage\": \"5.00\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -3851,7 +3851,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"admin_user_id\": {{admin_user_id}},\n  \"pin\": \"{{admin_pin}}\"\n}",
+              "raw": "{\n  \"pin\": \"{{admin_pin}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5195,7 +5195,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"reason\": \"Cliente cambió la partida\",\n  \"admin_user_id\": {{admin_user_id}},\n  \"pin\": \"{{admin_pin}}\"\n}",
+              "raw": "{\n  \"reason\": \"Cliente cambió la partida\",\n  \"pin\": \"{{admin_pin}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5248,7 +5248,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"reason\": \"Cancelación total de prueba\",\n  \"admin_user_id\": {{admin_user_id}},\n  \"pin\": \"{{admin_pin}}\"\n}",
+              "raw": "{\n  \"reason\": \"Cancelación total de prueba\",\n  \"pin\": \"{{admin_pin}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"

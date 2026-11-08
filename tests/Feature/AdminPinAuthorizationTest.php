@@ -26,7 +26,7 @@ test('authorization returns the local admin and logs identities action and time 
     $this->travelTo(now()->startOfSecond());
     $this->actingAs($this->waiter->user, 'sanctum');
     Log::spy();
-    $result = app(AdminPinAuthorization::class)->authorize($this->adminA->user_id, '012345', 'order.discount');
+    $result = app(AdminPinAuthorization::class)->authorize(null, '012345', 'order.discount');
     expect($result->user_id)->toBe($this->adminA->user_id);
     Log::shouldHaveReceived('info')->once()->with('admin_pin_authorized', [
         'restaurant_id' => $this->restaurantA->id,
@@ -149,4 +149,28 @@ test('an explicit foreign tenant context cannot borrow requester credentials', f
 test('PIN authorization requires the action being authorized', function () {
     $this->actingAs($this->waiter->user, 'sanctum');
     expect(fn () => app(AdminPinAuthorization::class)->authorize($this->adminA->user_id, '012345', ''))->toThrow(ValidationException::class);
+});
+
+test('a legacy duplicate PIN fails closed even when an administrator ID is provided', function () {
+    app(RestaurantContext::class)->run($this->restaurantA, fn () => Employee::factory()->create(['role' => 'admin', 'pin' => '012345']));
+    $this->actingAs($this->waiter->user, 'sanctum');
+    Log::spy();
+    $service = app(AdminPinAuthorization::class);
+    expect(fn () => $service->authorize(null, '012345', 'order.discount'))->toThrow(ValidationException::class);
+    expect(fn () => $service->authorize($this->adminA->user_id, '012345', 'order.discount'))->toThrow(ValidationException::class);
+    Log::shouldNotHaveReceived('info');
+});
+
+test('the failure budget is scoped to the bearer session', function () {
+    $user = $this->waiter->user;
+    $first = $user->createToken('first')->accessToken;
+    $second = $user->createToken('second')->accessToken;
+    $this->actingAs($user->withAccessToken($first), 'sanctum');
+    $service = app(AdminPinAuthorization::class);
+    for ($i = 0; $i < 5; $i++) {
+        expect(fn () => $service->authorize(null, '999999', 'order.discount'))->toThrow(ValidationException::class);
+    }
+    expect(fn () => $service->authorize(null, '012345', 'order.cancel'))->toThrow(HttpException::class);
+    $this->actingAs($user->withAccessToken($second), 'sanctum');
+    expect($service->authorize(null, '012345', 'order.cancel')->user_id)->toBe($this->adminA->user_id);
 });
