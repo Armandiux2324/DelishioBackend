@@ -80,6 +80,11 @@ class OrderItem extends Model
         return $this->hasMany(TaxExemption::class);
     }
 
+    public function returns(): HasMany
+    {
+        return $this->hasMany(OrderItemReturn::class);
+    }
+
     public function menuItem(): BelongsTo
     {
         return $this->belongsTo(MenuItem::class)->withTrashed();

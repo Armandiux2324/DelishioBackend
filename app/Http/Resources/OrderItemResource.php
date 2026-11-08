@@ -16,6 +16,7 @@ class OrderItemResource extends JsonResource
             'cancelled' => $this->cancelled, 'cancel_reason' => $this->cancel_reason,
             'cancelled_by_employee_id' => $this->cancelled_by_employee_id, 'cancel_authorized_by_employee_id' => $this->cancel_authorized_by_employee_id,
             'created_at' => $this->created_at,
+            'quantity_returned' => $this->whenHas('quantity_returned', fn () => (int) $this->quantity_returned),
             'menu_item' => $this->whenLoaded('menuItem', fn () => $this->menuItem?->only(['id', 'name', 'legal_age_required'])),
         ];
     }

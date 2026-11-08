@@ -12,7 +12,7 @@ class ProfitMarginsReport
 
     public function summarize(CarbonImmutable $from, CarbonImmutable $until): array
     {
-        $sales = $this->products->summarize($from, $until, []);
+        $sales = $this->products->summarize($from, $until, [], includeReturns: false);
         $costedSales = $costTotal = BigDecimal::of('0.00');
         $products = [];
         foreach ($sales['products'] as $product) {

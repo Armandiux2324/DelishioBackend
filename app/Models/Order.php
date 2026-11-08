@@ -49,9 +49,15 @@ class Order extends Model
 
     public function scopeClosedSales(Builder $query, CarbonImmutable $from, CarbonImmutable $until): Builder
     {
-        return $query->where('orders.status', 'closed')
+        return $query->completedSales()
             ->where('orders.closed_at', '>=', $from)
-            ->where('orders.closed_at', '<', $until)
+            ->where('orders.closed_at', '<', $until);
+    }
+
+    public function scopeCompletedSales(Builder $query): Builder
+    {
+        return $query->where('orders.status', 'closed')
+            ->whereNotNull('orders.closed_at')
             ->where(function (Builder $orders) {
                 $orders->where('orders.source', 'pos')
                     ->orWhereHas('advancePayment', fn (Builder $payment) => $payment->where('status', 'captured'));

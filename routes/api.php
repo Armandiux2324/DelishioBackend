@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\Admin\EmployeeController;
 use App\Http\Controllers\Api\Admin\InventoryItemController;
 use App\Http\Controllers\Api\Admin\InventoryLossController;
 use App\Http\Controllers\Api\Admin\MenuItemController;
+use App\Http\Controllers\Api\Admin\OrderItemReturnController;
 use App\Http\Controllers\Api\Admin\OrdersReportController;
 use App\Http\Controllers\Api\Admin\PaymentTransactionsReportController;
 use App\Http\Controllers\Api\Admin\ProductsReportController;
@@ -92,6 +93,10 @@ Route::prefix('v1')->group(function () {
         Route::get('reports/orders', OrdersReportController::class)->name('admin.reports.orders');
         Route::get('reports/tax-associations', TaxAssociationsReportController::class)->name('admin.reports.tax-associations');
         Route::get('reports/products', ProductsReportController::class)->name('admin.reports.products');
+        Route::get('orders/{order}/items', [OrderItemReturnController::class, 'index'])
+            ->whereNumber('order')->name('admin.orders.items.index');
+        Route::post('orders/{order}/items/{item}/returns', OrderItemReturnController::class)
+            ->scopeBindings()->whereNumber(['order', 'item'])->name('admin.orders.items.returns.store');
         Route::get('reports/cash-closures', [CashMenuInventoryReportsController::class, 'cashClosures'])->name('admin.reports.cash-closures');
         Route::get('reports/menu-audit', [CashMenuInventoryReportsController::class, 'menuAudit'])->name('admin.reports.menu-audit');
         Route::get('reports/inventory-value', [CashMenuInventoryReportsController::class, 'inventoryValue'])->name('admin.reports.inventory-value');
