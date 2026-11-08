@@ -4,11 +4,11 @@ namespace App\Services\Reports;
 
 use App\Models\Order;
 use Carbon\CarbonImmutable;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 
 class OrdersReport
 {
-    public function paginate(string $type, CarbonImmutable $from, CarbonImmutable $until): LengthAwarePaginator
+    public function query(string $type, CarbonImmutable $from, CarbonImmutable $until): Builder
     {
         if ($type === 'paid') {
             $orders = Order::closedSales($from, $until);
@@ -25,6 +25,6 @@ class OrdersReport
         }
 
         return $orders->with('advancePayment:id,order_id,status')
-            ->orderByDesc($dateColumn)->orderByDesc('id')->paginate(20);
+            ->orderByDesc($dateColumn)->orderByDesc('id');
     }
 }
