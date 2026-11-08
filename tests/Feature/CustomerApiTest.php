@@ -187,7 +187,16 @@ test('insufficient stock voids an authorization and sends one localized cancella
     expect(Order::withoutGlobalScope('restaurant')->findOrFail($id)->cancelled_at->equalTo($payment->cancellation_requested_at))->toBeTrue();
     Notification::assertSentTo($this->customer->user, AdvanceOrderCancelled::class, fn ($notification) => $notification->locale === 'es');
     Notification::assertCount(1);
-    $this->getJson("/api/v1/customer/orders/$id")->assertOk()->assertJsonPath('data.status', 'cancelled');
+    $this->getJson("/api/v1/customer/orders/$id")->assertOk()->assertJsonPath('data.status', 'cancelled')
+        ->assertJsonPath('data.cancel_reason', 'El pedido fue cancelado por falta de existencias.')
+        ->assertJsonMissingPath('data.advance_payment.last_error');
+    $this->getJson('/api/v1/customer/orders')->assertOk()
+        ->assertJsonPath('data.0.cancel_reason', 'El pedido fue cancelado por falta de existencias.');
+    $this->customer->user->update(['locale' => 'en']);
+    $this->getJson("/api/v1/customer/orders/$id")->assertOk()
+        ->assertJsonPath('data.cancel_reason', 'The order was cancelled due to insufficient stock.');
+    $this->actingAs(Customer::factory()->create()->user, 'sanctum')
+        ->getJson("/api/v1/customer/orders/$id")->assertNotFound();
 });
 
 test('a failed void retries after restocking without ever fulfilling a cancelled order', function () {
@@ -594,13 +603,17 @@ test('a cancelled intent cancels only an unpaid order and stale cancellation can
     $first = clientOrder();
     clientIntent($first);
     clientEvent($first, ['status' => 'canceled', 'amount_received' => 0], ['type' => 'payment_intent.canceled'])->assertOk();
-    $this->getJson("/api/v1/customer/orders/$first")->assertOk()->assertJsonPath('data.status', 'cancelled');
+    $this->getJson("/api/v1/customer/orders/$first")->assertOk()->assertJsonPath('data.status', 'cancelled')
+        ->assertJsonPath('data.cancel_reason', 'The payment authorization is no longer available.');
+    DB::table('orders')->where('id', $first)->update(['cancel_reason' => null]);
+    $this->getJson("/api/v1/customer/orders/$first")->assertOk()->assertJsonPath('data.cancel_reason', 'The order was cancelled.');
     $this->postJson("/api/v1/customer/orders/$first/payment")->assertConflict();
     $second = clientOrder();
     clientIntent($second);
     clientEvent($second)->assertOk();
     clientEvent($second, ['status' => 'canceled', 'amount_received' => 0], ['type' => 'payment_intent.canceled'])->assertOk();
-    $this->getJson("/api/v1/customer/orders/$second")->assertOk()->assertJsonPath('data.status', 'closed');
+    $this->getJson("/api/v1/customer/orders/$second")->assertOk()->assertJsonPath('data.status', 'closed')
+        ->assertJsonMissingPath('data.cancel_reason');
     expect($this->refunds)->toBe(0)->and(DB::table('payments')->count())->toBe(1);
 });
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Restaurant;
 
+use App\Models\Restaurant;
 use Closure;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -42,7 +43,7 @@ class UpdateRestaurantConfigurationRequest extends FormRequest
             'courtesy_percentage' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:100', 'decimal:0,2'],
             'courtesy_daily_limit' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:4294967295'],
             'dual_pricing_enabled' => ['sometimes', 'required', 'boolean'],
-            'dual_pricing_percentage' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:999.99', 'decimal:0,2'],
+            'dual_pricing_percentage' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:'.Restaurant::MAX_DUAL_PRICING_PERCENTAGE, 'decimal:0,2'],
             'id' => ['missing'],
             'stripe_account_id' => ['missing'],
             'restaurant_id' => ['missing'],

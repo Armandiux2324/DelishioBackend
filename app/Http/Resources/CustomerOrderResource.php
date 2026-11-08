@@ -22,6 +22,7 @@ class CustomerOrderResource extends JsonResource
             'loyalty_redeemed_amount' => $this->loyalty_redeemed_amount, 'surcharge_total' => $this->surcharge_total, 'created_at' => $this->created_at,
             'currency' => $this->whenLoaded('advancePayment', fn () => $this->advancePayment?->currency),
             'sent_at' => $this->sent_at, 'closed_at' => $this->closed_at,
+            'cancel_reason' => $this->when($this->status === 'cancelled', fn () => __($this->cancel_reason ?? 'El pedido fue cancelado.')),
             'preparation_status' => $this->whenLoaded('items', fn () => $preparation),
             'items' => $this->whenLoaded('items', fn () => $this->items->map(fn ($item) => [
                 'id' => $item->id, 'menu_item_id' => $item->menu_item_id, 'name' => $item->menuItem?->name,

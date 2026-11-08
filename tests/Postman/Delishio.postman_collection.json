@@ -2521,6 +2521,59 @@
               }
             }
           ]
+        },
+        {
+          "name": "Editar mi perfil RFU-003",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/api/v1/user",
+            "description": "Edita nombre, alias, idioma y teléfono de tu propia cuenta.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{customer_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Cliente actualizado {{run_id}}\",\n  \"locale\": \"es\",\n  \"phone\": \"5559998878\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP esperado 200', () => pm.expect([200]).to.include(pm.response.code));",
+                  "let j; try { j = pm.response.json(); } catch(e) { pm.test('Respuesta JSON', () => { throw e; }); }",
+                  "if (j && pm.response.code >= 200 && pm.response.code < 300) {",
+                  "",
+                  "}",
+                  ""
+                ]
+              }
+            }
+          ]
         }
       ]
     },
