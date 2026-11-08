@@ -29,6 +29,10 @@ class RestaurantConfigurationController extends Controller
             // Valida el estado final bajo bloqueo: los PATCH parciales pueden conservar valores guardados.
             $rules = [];
             foreach (['loyalty_factor' => 'loyalty_enabled', 'loyalty_redeem_value' => 'loyalty_enabled', 'dual_pricing_percentage' => 'dual_pricing_enabled'] as $field => $flag) {
+                if ($field === 'dual_pricing_percentage' && ! $restaurant->dual_pricing_enabled) {
+                    // Disabling must also work for out-of-range percentages stored before the limit.
+                    continue;
+                }
                 $rules[$field] = [...$request->rules()[$field], Rule::requiredIf($restaurant->$flag)];
             }
             Validator::make($restaurant->getAttributes(), $rules)->validate();

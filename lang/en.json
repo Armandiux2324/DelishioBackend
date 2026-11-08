@@ -4,6 +4,8 @@
     "La autorización de pago ya no está disponible.": "The payment authorization is no longer available.",
     "Crea un pedido nuevo para autorizar el pago.": "Create a new order to authorize payment.",
     "El pedido ya no está disponible para confirmación.": "The order is no longer available for confirmation.",
+    "El pedido fue cancelado.": "The order was cancelled.",
+    "El pedido fue cancelado por falta de existencias.": "The order was cancelled due to insufficient stock.",
     "Stripe no confirmó la devolución; se reintentará.": "Stripe did not confirm the refund; it will be retried.",
     "Pedido cancelado": "Order cancelled",
     "Hola :name": "Hello :name",

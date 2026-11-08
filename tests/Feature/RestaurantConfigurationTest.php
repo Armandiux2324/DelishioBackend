@@ -110,7 +110,7 @@ test('invalid configuration is rejected without saving any field', function (str
     ['discount_limit_per_shift', -1], ['discount_limit_per_shift', '1000000'], ['discount_limit_per_shift', '1.001'],
     ['courtesy_percentage', -1], ['courtesy_percentage', '100.01'], ['courtesy_percentage', '1.001'],
     ['courtesy_daily_limit', -1], ['courtesy_daily_limit', 1.5], ['courtesy_daily_limit', '4294967296'],
-    ['dual_pricing_percentage', -1], ['dual_pricing_percentage', '1000'], ['dual_pricing_percentage', '1.001'],
+    ['dual_pricing_percentage', -1], ['dual_pricing_percentage', '100.01'], ['dual_pricing_percentage', '999.99'], ['dual_pricing_percentage', '1.001'],
     ['id', 123], ['restaurant_id', 123], ['restaurant_id', null], ['status', 'suspended'], ['status', null],
     ['created_by_user_id', 123], ['created_at', '2026-01-01'], ['updated_at', null], ['deleted_at', '2026-01-01'],
 ]);
@@ -156,12 +156,22 @@ test('zero limits and storage boundaries are accepted without rounding', functio
     $this->withToken($this->admin->createToken('test')->plainTextToken);
     $this->patchJson('/api/v1/admin/restaurant/configuration', [
         'loyalty_factor' => '9999.9999', 'loyalty_redeem_value' => '9999.9999', 'discount_limit_per_shift' => '999999.99',
-        'courtesy_percentage' => '100.00', 'courtesy_daily_limit' => 4294967295, 'dual_pricing_percentage' => '999.99',
-    ])->assertOk()->assertJsonPath('data.loyalty_factor', '9999.9999')->assertJsonPath('data.discount_limit_per_shift', '999999.99');
+        'courtesy_percentage' => '100.00', 'courtesy_daily_limit' => 4294967295, 'dual_pricing_percentage' => '100.00',
+    ])->assertOk()->assertJsonPath('data.loyalty_factor', '9999.9999')->assertJsonPath('data.discount_limit_per_shift', '999999.99')->assertJsonPath('data.dual_pricing_percentage', '100.00');
     $this->patchJson('/api/v1/admin/restaurant/configuration', [
         'discount_limit_per_shift' => 0, 'courtesy_percentage' => 0, 'courtesy_daily_limit' => 0,
         'dual_pricing_enabled' => true, 'dual_pricing_percentage' => 0,
     ])->assertOk()->assertJsonPath('data.discount_limit_per_shift', '0.00')->assertJsonPath('data.courtesy_daily_limit', 0);
+});
+
+test('legacy dual pricing above the limit can be disabled and corrected before reactivation', function () {
+    $this->restaurant->update(['dual_pricing_enabled' => true, 'dual_pricing_percentage' => '101.00']);
+    $this->withToken($this->admin->createToken('test')->plainTextToken);
+    $url = '/api/v1/admin/restaurant/configuration';
+    $this->patchJson($url, ['dual_pricing_enabled' => false])->assertOk()->assertJsonPath('data.dual_pricing_enabled', false);
+    $this->patchJson($url, ['dual_pricing_enabled' => true])->assertUnprocessable()->assertJsonValidationErrors('dual_pricing_percentage');
+    $this->patchJson($url, ['dual_pricing_enabled' => true, 'dual_pricing_percentage' => '100.00'])->assertOk()
+        ->assertJsonPath('data.dual_pricing_enabled', true)->assertJsonPath('data.dual_pricing_percentage', '100.00');
 });
 
 test('optional information can be cleared without changing other settings', function () {

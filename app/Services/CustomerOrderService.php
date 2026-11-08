@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\InsufficientStockException;
 use App\Models\AdvanceOrderPayment;
 use App\Models\CashRegister;
 use App\Models\Customer;
@@ -64,7 +65,7 @@ class CustomerOrderService
             $adjustment = BigDecimal::of('0.00');
             if ($restaurant->dual_pricing_enabled) {
                 if ($restaurant->dual_pricing_percentage === null || BigDecimal::of($restaurant->dual_pricing_percentage)->isNegative()
-                    || BigDecimal::of($restaurant->dual_pricing_percentage)->isGreaterThan(100)) {
+                    || BigDecimal::of($restaurant->dual_pricing_percentage)->isGreaterThan(Restaurant::MAX_DUAL_PRICING_PERCENTAGE)) {
                     throw ValidationException::withMessages(['items' => __('Configura un porcentaje válido de precios duales.')]);
                 }
                 $adjustment = BigDecimal::of($totals['total'])->multipliedBy($restaurant->dual_pricing_percentage)->dividedBy(100, 2, RoundingMode::HalfUp);
@@ -160,7 +161,7 @@ class CustomerOrderService
                     $order = Order::withoutGlobalScope('restaurant')->whereKey($payment->order_id)->lockForUpdate()->firstOrFail();
                     $current = $this->freshPayment($payment->id, true);
                     if ($order->closed_at === null && ! in_array($current->status, ['captured', 'refunded'], true)) {
-                        $this->cancelLocked($order, $current, __('La autorización de pago ya no está disponible.'));
+                        $this->cancelLocked($order, $current, 'La autorización de pago ya no está disponible.');
                         $this->saveState($current, ['status' => 'voided']);
                     }
                 });
@@ -171,7 +172,7 @@ class CustomerOrderService
             if ($order->status !== 'cancelled' && $intent->capture_method !== 'manual' && $intent->status !== 'succeeded') {
                 DB::transaction(function () use ($payment) {
                     $order = Order::withoutGlobalScope('restaurant')->whereKey($payment->order_id)->lockForUpdate()->firstOrFail();
-                    $this->cancelLocked($order, $this->freshPayment($payment->id, true), __('Crea un pedido nuevo para autorizar el pago.'));
+                    $this->cancelLocked($order, $this->freshPayment($payment->id, true), 'Crea un pedido nuevo para autorizar el pago.');
                 });
                 $order->status = 'cancelled';
             }
@@ -223,7 +224,7 @@ class CustomerOrderService
             }
             $restaurant = Restaurant::find($order->restaurant_id);
             if (! $cash || $cash->closed_at !== null || ! $restaurant || $restaurant->status !== 'active' || $restaurant->stripe_account_id === null || $order->status !== 'open') {
-                $this->cancelLocked($order, $payment, __('El pedido ya no está disponible para confirmación.'));
+                $this->cancelLocked($order, $payment, 'El pedido ya no está disponible para confirmación.');
 
                 return;
             }
@@ -252,13 +253,15 @@ class CustomerOrderService
                     $order->update(['status' => 'closed', 'closed_at' => now()]);
                     $payment->update(['status' => 'captured', 'captured_at' => now(), 'last_error' => null]);
                 }));
-            } catch (ValidationException $exception) {
-                $this->cancelLocked($order, $payment, __('El pedido ya no está disponible para confirmación.'));
+            } catch (InsufficientStockException) {
+                $this->cancelLocked($order, $payment, 'El pedido fue cancelado por falta de existencias.');
+            } catch (ValidationException) {
+                $this->cancelLocked($order, $payment, 'El pedido ya no está disponible para confirmación.');
             } catch (HttpException $exception) {
                 if (! in_array($exception->getStatusCode(), [403, 404, 409, 422], true)) {
                     throw $exception;
                 }
-                $this->cancelLocked($order, $payment, __('El pedido ya no está disponible para confirmación.'));
+                $this->cancelLocked($order, $payment, 'El pedido ya no está disponible para confirmación.');
             }
         });
     }
@@ -318,7 +321,7 @@ class CustomerOrderService
             'cancelled_at' => $cancelledAt,
             'cancel_reason' => $order->cancel_reason ?? $reason,
         ]);
-        $this->saveState($payment, ['cancellation_requested_at' => $cancelledAt, 'last_error' => $reason]);
+        $this->saveState($payment, ['cancellation_requested_at' => $cancelledAt, 'last_error' => __($reason)]);
         $event = ['order_id' => $order->id, 'payment_id' => $payment->id];
         DB::afterCommit(fn () => Log::warning('advance_order_rejected', $event));
     }

@@ -125,7 +125,7 @@ class OrderCheckoutService
         $remainder = $bill->isGreaterThan($nonCard) ? $bill->minus($nonCard) : BigDecimal::of('0.00');
         if ($restaurant->dual_pricing_enabled && $remainder->isPositive()) {
             $percentage = $restaurant->dual_pricing_percentage;
-            if ($percentage === null || BigDecimal::of($percentage)->isNegative() || BigDecimal::of($percentage)->isGreaterThan(100)) {
+            if ($percentage === null || BigDecimal::of($percentage)->isNegative() || BigDecimal::of($percentage)->isGreaterThan(Restaurant::MAX_DUAL_PRICING_PERCENTAGE)) {
                 throw ValidationException::withMessages(['payments' => __('Configura un porcentaje válido de precios duales.')]);
             }
             // Cash and transfers cover the bill first; only the remaining bill receives a card adjustment.

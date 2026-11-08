@@ -34,10 +34,10 @@ use App\Http\Controllers\Api\WorkShiftController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
+use App\Http\Controllers\Auth\ProfileController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\TwoFactorController;
 use App\Http\Controllers\Auth\VerifyEmailController;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -125,9 +125,10 @@ Route::prefix('v1')->group(function () {
         Route::patch('/restaurant/configuration', [RestaurantConfigurationController::class, 'update']);
     });
 
-    Route::get('/user', function (Request $request) {
-        return $request->user();
-    })->middleware(['auth:sanctum', 'account.active']);
+    Route::middleware(['auth:sanctum', 'account.active'])->group(function () {
+        Route::get('/user', [ProfileController::class, 'show']);
+        Route::patch('/user', [ProfileController::class, 'update']);
+    });
 
     Route::prefix('auth')->group(function () {
         Route::post('/register', [RegisteredUserController::class, 'store'])->middleware('throttle:6,1');

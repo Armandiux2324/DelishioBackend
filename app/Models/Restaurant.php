@@ -36,6 +36,8 @@ class Restaurant extends Model
 {
     use HasFactory, SoftDeletes;
 
+    public const MAX_DUAL_PRICING_PERCENTAGE = 100;
+
     protected function casts(): array
     {
         return [
