@@ -312,8 +312,13 @@ class CustomerOrderService
 
     private function cancelLocked(Order $order, AdvanceOrderPayment $payment, string $reason): void
     {
-        Order::withoutGlobalScope('restaurant')->whereKey($order->id)->update(['status' => 'cancelled']);
-        $this->saveState($payment, ['cancellation_requested_at' => $payment->cancellation_requested_at ?? now(), 'last_error' => $reason]);
+        $cancelledAt = $payment->cancellation_requested_at ?? now();
+        Order::withoutGlobalScope('restaurant')->whereKey($order->id)->update([
+            'status' => 'cancelled',
+            'cancelled_at' => $cancelledAt,
+            'cancel_reason' => $order->cancel_reason ?? $reason,
+        ]);
+        $this->saveState($payment, ['cancellation_requested_at' => $cancelledAt, 'last_error' => $reason]);
         $event = ['order_id' => $order->id, 'payment_id' => $payment->id];
         DB::afterCommit(fn () => Log::warning('advance_order_rejected', $event));
     }

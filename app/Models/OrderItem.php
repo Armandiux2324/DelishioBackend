@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['order_id', 'menu_item_id', 'quantity', 'unit_price', 'modifiers', 'kitchen_notes', 'station', 'status', 'cancelled', 'cancel_reason', 'cancelled_by_employee_id', 'cancel_authorized_by_employee_id'])]
+#[Fillable(['order_id', 'menu_item_id', 'quantity', 'unit_price', 'modifiers', 'kitchen_notes', 'station', 'status', 'cancelled', 'cancel_reason', 'cancelled_by_employee_id', 'cancel_authorized_by_employee_id', 'cancelled_at'])]
 class OrderItem extends Model
 {
     /** @use HasFactory<OrderItemFactory> */
@@ -23,7 +23,7 @@ class OrderItem extends Model
 
     protected function casts(): array
     {
-        return ['quantity' => 'integer', 'unit_price' => 'decimal:2', 'cancelled' => 'boolean', 'created_at' => 'datetime'];
+        return ['quantity' => 'integer', 'unit_price' => 'decimal:2', 'cancelled' => 'boolean', 'created_at' => 'datetime', 'cancelled_at' => 'datetime'];
     }
 
     protected static function booted(): void
@@ -34,7 +34,7 @@ class OrderItem extends Model
             abort_unless($order, 403);
             if ($item->exists) {
                 if ($item->getRawOriginal('cancelled')) {
-                    abort_if($item->isDirty(['cancelled', 'cancel_reason', 'cancelled_by_employee_id', 'cancel_authorized_by_employee_id']), 403);
+                    abort_if($item->isDirty(['cancelled', 'cancel_reason', 'cancelled_by_employee_id', 'cancel_authorized_by_employee_id', 'cancelled_at']), 403);
                 }
                 abort_if($item->isDirty(['order_id', 'menu_item_id', 'unit_price', 'station']), 403);
                 if ($item->isDirty(['quantity', 'modifiers', 'kitchen_notes'])) {

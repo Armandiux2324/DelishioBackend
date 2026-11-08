@@ -432,6 +432,9 @@ test('successful cancellation records action time and actors without logging cre
         'restaurant_id' => $this->restaurantA->id, 'requested_by_employee_id' => $this->waiterA->id,
         'authorized_by_employee_id' => $this->adminA->id, 'action' => 'order.item.cancel', 'authorized_at' => '2026-11-05T12:00:00+00:00',
     ])->once();
+    $this->assertDatabaseHas('order_items', ['id' => $line, 'cancelled_at' => '2026-11-05 12:00:00']);
+    $this->assertDatabaseHas('orders', ['id' => $order, 'cancelled_at' => '2026-11-05 12:00:00',
+        'cancel_reason' => 'Autorizado', 'cancel_authorized_by_employee_id' => $this->adminA->id]);
     Log::shouldHaveReceived('info')->with('order_cancelled', [
         'order_id' => $order, 'order_item_id' => $line, 'reason' => 'Autorizado',
         'requested_by_employee_id' => $this->waiterA->id, 'authorized_by_employee_id' => $this->adminA->id,

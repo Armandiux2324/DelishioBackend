@@ -63,9 +63,10 @@ class WaiterOrderService
             if ($item->discounts()->exists() || $item->taxExemptions()->exists()) {
                 abort_if($item->cancelled, 409, __('El elemento ya está cancelado.'));
                 $reason = __('Elemento eliminado antes de confirmar.');
-                $item->update(['cancelled' => true, 'cancel_reason' => $reason, 'cancelled_by_employee_id' => $order->waiter_employee_id]);
+                $cancelledAt = now();
+                $item->update(['cancelled' => true, 'cancelled_at' => $cancelledAt, 'cancel_reason' => $reason, 'cancelled_by_employee_id' => $order->waiter_employee_id]);
                 $event = ['order_id' => $order->id, 'order_item_id' => $item->id, 'reason' => $reason,
-                    'requested_by_employee_id' => $order->waiter_employee_id, 'authorized_by_employee_id' => null, 'cancelled_at' => now()->toIso8601String()];
+                    'requested_by_employee_id' => $order->waiter_employee_id, 'authorized_by_employee_id' => null, 'cancelled_at' => $cancelledAt->toIso8601String()];
                 DB::afterCommit(fn () => Log::info('order_cancelled', $event));
             } else {
                 $item->delete();

@@ -129,19 +129,23 @@ class OrderAdjustmentService
             if ($item !== null) {
                 abort_unless($items->contains('id', $item->id), 409, __('El elemento ya está cancelado.'));
             }
+            $cancelledAt = now();
             foreach ($items as $line) {
                 if ($item === null || $line->id === $item->id) {
-                    $line->update(['cancelled' => true, 'cancel_reason' => $data['reason'], 'cancelled_by_employee_id' => $order->waiter_employee_id,
+                    $line->update(['cancelled' => true, 'cancelled_at' => $cancelledAt, 'cancel_reason' => $data['reason'], 'cancelled_by_employee_id' => $order->waiter_employee_id,
                         'cancel_authorized_by_employee_id' => $admin?->user_id]);
                 }
             }
             if ($item === null || ! $order->items()->where('cancelled', false)->exists()) {
                 $order->status = 'cancelled';
+                $order->cancelled_at = $cancelledAt;
+                $order->cancel_reason = $data['reason'];
+                $order->cancel_authorized_by_employee_id = $admin?->user_id;
             }
             // Confirmed cancellations preserve consumed inventory; prepared ingredients are not automatically restocked.
             $order->update(app(OrderTotals::class)->calculate($order));
             $event = ['order_id' => $order->id, 'order_item_id' => $item?->id, 'reason' => $data['reason'],
-                'requested_by_employee_id' => $order->waiter_employee_id, 'authorized_by_employee_id' => $admin?->user_id, 'cancelled_at' => now()->toIso8601String()];
+                'requested_by_employee_id' => $order->waiter_employee_id, 'authorized_by_employee_id' => $admin?->user_id, 'cancelled_at' => $cancelledAt->toIso8601String()];
             DB::afterCommit(fn () => Log::info('order_cancelled', $event));
 
             return $this->result($order);
