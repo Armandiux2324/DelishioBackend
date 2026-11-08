@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\Admin\CashMenuInventoryReportsController;
 use App\Http\Controllers\Api\Admin\CashMovementController;
 use App\Http\Controllers\Api\Admin\CategoryController;
 use App\Http\Controllers\Api\Admin\CustomerController;
@@ -91,6 +92,10 @@ Route::prefix('v1')->group(function () {
         Route::get('reports/orders', OrdersReportController::class)->name('admin.reports.orders');
         Route::get('reports/tax-associations', TaxAssociationsReportController::class)->name('admin.reports.tax-associations');
         Route::get('reports/products', ProductsReportController::class)->name('admin.reports.products');
+        Route::get('reports/cash-closures', [CashMenuInventoryReportsController::class, 'cashClosures'])->name('admin.reports.cash-closures');
+        Route::get('reports/menu-audit', [CashMenuInventoryReportsController::class, 'menuAudit'])->name('admin.reports.menu-audit');
+        Route::get('reports/inventory-value', [CashMenuInventoryReportsController::class, 'inventoryValue'])->name('admin.reports.inventory-value');
+        Route::get('reports/inventory-losses', [CashMenuInventoryReportsController::class, 'inventoryLosses'])->name('admin.reports.inventory-losses');
         Route::get('reports/sales-summary', SalesSummaryReportController::class)->name('admin.reports.sales-summary');
         foreach (['courtesies', 'discounts', 'profit-margins', 'taxes-and-exemptions', 'tips', 'cancellations', 'external-platform-sales'] as $report) {
             Route::get("reports/{$report}", RemainingReportsController::class)->defaults('report', $report)->name("admin.reports.{$report}");

@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 #[Fillable(['restaurant_id', 'opened_by_employee_id', 'opening_amount', 'opened_at', 'closed_by_employee_id', 'counted_cash', 'expected_cash', 'difference', 'closed_at'])]
 class CashRegister extends Model
@@ -47,6 +48,16 @@ class CashRegister extends Model
         return $this->hasMany(CashMovement::class);
     }
 
+    public function closedOrders(): HasMany
+    {
+        return $this->hasMany(Order::class)->where('orders.status', 'closed');
+    }
+
+    public function cashPayments(): HasManyThrough
+    {
+        return $this->hasManyThrough(Payment::class, Order::class)->where('orders.status', 'closed')->where('payments.method', 'cash');
+    }
+
     public function openedBy(): BelongsTo
     {
         return $this->belongsTo(Employee::class, 'opened_by_employee_id', 'user_id');
@@ -60,7 +71,7 @@ class CashRegister extends Model
     public function expectedCash(): BigDecimal
     {
         $expected = BigDecimal::of($this->opening_amount);
-        foreach (Payment::where('method', 'cash')->whereHas('order', fn ($query) => $query->where('cash_register_id', $this->id)->where('status', 'closed'))->orderBy('id')->cursor() as $payment) {
+        foreach ($this->cashPayments()->orderBy('payments.id')->cursor() as $payment) {
             $expected = $expected->plus($payment->amount);
         }
         foreach ($this->movements()->orderBy('id')->cursor() as $movement) {
