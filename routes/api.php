@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\Admin\InventoryLossController;
 use App\Http\Controllers\Api\Admin\MenuItemController;
 use App\Http\Controllers\Api\Admin\OrdersReportController;
 use App\Http\Controllers\Api\Admin\PaymentTransactionsReportController;
+use App\Http\Controllers\Api\Admin\ProductsReportController;
 use App\Http\Controllers\Api\Admin\PromotionController;
 use App\Http\Controllers\Api\Admin\RestaurantConfigurationController;
 use App\Http\Controllers\Api\Admin\SalesSummaryReportController;
@@ -88,6 +89,7 @@ Route::prefix('v1')->group(function () {
         Route::get('reports/payment-transactions', PaymentTransactionsReportController::class)->name('admin.reports.payment-transactions');
         Route::get('reports/orders', OrdersReportController::class)->name('admin.reports.orders');
         Route::get('reports/tax-associations', TaxAssociationsReportController::class)->name('admin.reports.tax-associations');
+        Route::get('reports/products', ProductsReportController::class)->name('admin.reports.products');
         Route::get('reports/sales-summary', SalesSummaryReportController::class)->name('admin.reports.sales-summary');
         Route::apiResource('cash-movements', CashMovementController::class)->only(['index', 'show', 'store']);
         Route::get('customers', [CustomerController::class, 'index']);
