@@ -8,12 +8,14 @@ use App\Http\Resources\EmployeeResource;
 use App\Models\Employee;
 use App\Models\Restaurant;
 use App\Models\User;
+use App\Services\AdminPinAuthorization;
 use App\Support\RestaurantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 
 class EmployeeController extends Controller
 {
@@ -28,8 +30,15 @@ class EmployeeController extends Controller
             $this->lockRestaurant();
             $user = User::create($request->safe()->only(['name', 'username', 'email', 'password', 'locale']) + ['user_type' => 'employee']);
             $user->forceFill(['email_verified_at' => now(), 'active' => $request->validated('active', true)])->save();
-            $generatedPin = $request->has('pin') ? null : str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
             $data = $request->safe()->only(['phone', 'role', 'station', 'hourly_rate', 'pin']);
+            $generatedPin = null;
+            if (isset($data['pin'])) {
+                $this->ensureUniqueAdminPin($data['role'], $data['pin']);
+            } else {
+                do {
+                    $generatedPin = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+                } while ($data['role'] === 'admin' && app(AdminPinAuthorization::class)->matchingAdmins($generatedPin)->isNotEmpty());
+            }
             $data['station'] = $data['role'] === 'chef' ? $data['station'] : null;
             $employee = Employee::create($data + ['user_id' => $user->id, 'pin' => $generatedPin]);
             $resource = new EmployeeResource($employee->load('user'));
@@ -55,6 +64,12 @@ class EmployeeController extends Controller
             $data = $request->validated();
             $role = $data['role'] ?? $employee->role;
             $active = (bool) ($data['active'] ?? $user->active);
+            if ($role === 'admin' && $employee->role !== 'admin' && ! isset($data['pin'])) {
+                throw ValidationException::withMessages(['pin' => __('Asigna un PIN al promover a administrador.')]);
+            }
+            if (isset($data['pin'])) {
+                $this->ensureUniqueAdminPin($role, $data['pin'], $employee->user_id);
+            }
             if ($role === 'chef') {
                 Validator::make(['station' => $data['station'] ?? $employee->station], ['station' => ['required', 'in:kitchen,bar']])->validate();
             }
@@ -91,6 +106,13 @@ class EmployeeController extends Controller
         });
 
         return response()->noContent();
+    }
+
+    private function ensureUniqueAdminPin(string $role, string $pin, ?int $except = null): void
+    {
+        if ($role === 'admin' && app(AdminPinAuthorization::class)->matchingAdmins($pin, $except)->isNotEmpty()) {
+            throw ValidationException::withMessages(['pin' => __('Este PIN ya está asignado a otro administrador del restaurante.')]);
+        }
     }
 
     private function lockRestaurant(): void

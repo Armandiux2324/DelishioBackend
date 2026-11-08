@@ -288,3 +288,19 @@ test('chef station is rechecked against locked data when the bound employee beco
     }
     $this->assertDatabaseHas('employees', ['user_id' => $employee->user_id, 'role' => 'waiter', 'station' => null]);
 });
+
+test('administrator PINs are unique within the restaurant at creation assignment and promotion', function () {
+    $this->actingAs($this->adminA, 'sanctum');
+    $url = '/api/v1/admin/employees';
+    $this->postJson($url, array_replace($this->payload, ['role' => 'admin', 'pin' => '123456']))
+        ->assertUnprocessable()->assertJsonValidationErrors('pin');
+    $this->assertDatabaseMissing('users', ['email' => $this->payload['email']]);
+    $employee = Employee::factory()->create(['pin' => '123456']);
+    $employeeUrl = $url.'/'.$employee->user_id;
+    $this->putJson($employeeUrl, ['role' => 'admin'])->assertUnprocessable()->assertJsonValidationErrors('pin');
+    $this->putJson($employeeUrl, ['role' => 'admin', 'pin' => '123456'])->assertUnprocessable()->assertJsonValidationErrors('pin');
+    $this->putJson($employeeUrl, ['role' => 'admin', 'pin' => '0421'])->assertOk()->assertJsonMissingPath('data.pin');
+    $this->putJson($url.'/'.$this->adminA->id, ['pin' => '0421'])->assertUnprocessable()->assertJsonValidationErrors('pin');
+    $this->putJson($employeeUrl, ['pin' => '0421'])->assertOk();
+    $this->actingAs($this->adminB, 'sanctum')->putJson($url.'/'.$this->adminB->id, ['pin' => '0421'])->assertOk();
+});

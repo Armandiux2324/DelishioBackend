@@ -26,7 +26,7 @@ class OrderAdjustmentService
             $this->checkItem($order, $data['order_item_id']);
         }
         // Keep rate-limiter writes outside the business transaction, including database cache.
-        $admin = app(AdminPinAuthorization::class)->authorize($data['admin_user_id'], $data['pin'], $courtesy ? 'order.courtesy' : 'order.discount');
+        $admin = app(AdminPinAuthorization::class)->authorize($data['admin_user_id'] ?? null, $data['pin'], $courtesy ? 'order.courtesy' : 'order.discount');
 
         return DB::transaction(function () use ($order, $data, $courtesy, $admin) {
             $order = $this->lockOrder($order);
@@ -113,8 +113,8 @@ class OrderAdjustmentService
             $this->checkItem($order, $item->id);
         }
         $admin = null;
-        if (isset($data['admin_user_id'], $data['pin'])) {
-            $admin = app(AdminPinAuthorization::class)->authorize($data['admin_user_id'], $data['pin'], $item ? 'order.item.cancel' : 'order.cancel');
+        if (isset($data['pin'])) {
+            $admin = app(AdminPinAuthorization::class)->authorize($data['admin_user_id'] ?? null, $data['pin'], $item ? 'order.item.cancel' : 'order.cancel');
         }
 
         return DB::transaction(function () use ($order, $item, $data, $admin) {

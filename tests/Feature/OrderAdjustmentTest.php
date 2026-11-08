@@ -68,7 +68,7 @@ beforeEach(function () {
     $this->actingAs($this->adminB, 'sanctum');
     $this->cashB = CashRegister::factory()->create();
     $this->actingAs($this->waiterA, 'sanctum');
-    $this->approval = ['admin_user_id' => $this->adminA->id, 'pin' => '012345'];
+    $this->approval = ['pin' => '012345'];
 });
 
 test('line and subtotal discounts allocate cents exactly and exemptions recalculate taxes without PIN', function () {
@@ -175,7 +175,7 @@ test('duplicate tax exemptions and adjustments on cancelled items are rejected',
 test('sent cancellation needs a valid local administrator PIN and preserves consumed inventory', function () {
     [$order, $line] = adjustmentOrder(true, true);
     $url = '/api/v1/waiter/orders/'.$order.'/items/'.$line.'/cancel';
-    $this->postJson($url, ['reason' => 'Rechazado'])->assertUnprocessable()->assertJsonValidationErrors(['pin', 'admin_user_id']);
+    $this->postJson($url, ['reason' => 'Rechazado'])->assertUnprocessable()->assertJsonValidationErrors('pin');
     $this->postJson($url, ['reason' => 'Rechazado', 'admin_user_id' => $this->adminB->id, 'pin' => '654321'])->assertUnprocessable()->assertJsonValidationErrors('pin');
     $this->postJson($url, $this->approval + ['reason' => 'Devolución autorizada'])->assertOk()
         ->assertJsonPath('data.items.0.cancelled', true)->assertJsonPath('data.items.0.cancel_authorized_by_employee_id', $this->adminA->id)
@@ -257,7 +257,7 @@ test('PIN rate limiting survives business rollbacks with the database cache driv
         $this->postJson('/api/v1/waiter/orders/'.$order.'/discounts', ['admin_user_id' => $this->adminA->id, 'pin' => '999999', 'amount' => 1])
             ->assertUnprocessable()->assertJsonValidationErrors('pin');
     }
-    expect((int) Cache::store('database')->get('admin-pin:'.$this->restaurantA->id.':'.$this->waiterA->id))->toBe(5);
+    expect((int) Cache::store('database')->get('admin-pin:'.$this->restaurantA->id.':user:'.$this->waiterA->id))->toBe(5);
     $this->postJson('/api/v1/waiter/orders/'.$order.'/discounts', $this->approval + ['amount' => 1])->assertStatus(429);
     expect(OrderDiscount::count())->toBe(0);
     $this->travel(61)->seconds();
